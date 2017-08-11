@@ -1,0 +1,21 @@
+{
+  "Debug": false,
+  "Log_dir": "logs",
+  "Bots":
+  {
+    "SquirtleBot_Testing":
+    {
+      "API_token": "changeme",
+      "Channels":
+      {
+        "general": null
+      },
+      "Classifier_file": "squirtlebot_testing.dat",
+      "League_auth_cookies":
+      {
+        "espn_s2": "changeme",
+        "SWID": "changeme"
+      }
+    }
+  }
+}
