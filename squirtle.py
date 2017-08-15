@@ -48,6 +48,8 @@ def _assert_config(config):
 
   for b in config['Bots']:
     assert config['Bots'][b]['API_token'] != 'changeme', "Change \'API_token\' from default: %r" % config['Bots'][b]['API_token']
+    assert config['Bots'][b]['League ID'] != 12345, "Change \'League ID\' from default: %r" % config['Bots'][b]['League ID']
+    assert config['Bots'][b]['League year'] != 12345, "Change \'League year\' from default: %r" % config['Bots'][b]['League year']
 
 
 def _main(bots, logger):

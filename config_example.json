@@ -15,7 +15,9 @@
       {
         "espn_s2": "changeme",
         "SWID": "changeme"
-      }
+      },
+      "League ID": 12345,
+      "League year": 12345
     }
   }
 }
