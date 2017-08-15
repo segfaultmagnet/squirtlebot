@@ -14,6 +14,7 @@ __status__  = 'Development'
 
 
 import os
+import re
 
 import _pickle as pickle
 
@@ -38,6 +39,41 @@ class SlackBotLang:
       raise
 
 
+  def parse_commands(self, text):
+    """
+    Scan text for command phrase.
+
+    Returns:
+      The command found, if any.
+
+      The original text stripped of the command phrase.
+    """
+    cmd     = None
+    newtext = ''
+    for c in self.commands:
+      r = self.commands[c]
+      if r.match(text):
+        newtext = re.sub(r, '', text, count=1)
+        cmd = c
+    return cmd, newtext
+
+
+  def parse_keywords(self, text):
+    """ Scan text for keywords with pre-defined responses. """
+    keywd = None
+    for k in self.keywords['match']:
+      if self.keywords['match'][k].match(text):
+        keywd = k
+
+    # Look for everything else.
+    if keywd == None:
+      for k in self.keywords['search']:
+        if self.keywords['search'][k].search(text):
+          keywd = k
+
+    return keywd
+
+
   def parse_rtm(self, output):
     """
     Returns: if this bot is mentioned, a dict containing:
@@ -56,15 +92,9 @@ class SlackBotLang:
         if o and 'text' in o and o['user'] != self.id():
           
           # Scan text for keywords with pre-defined responses.
-          for a in self.keywords['match']:
-            if self.keywords['match'][a].match(o['text']):
-              result['action'] = a
-
-          # Look for everything else.
-          if result['action'] == None:
-            for a in self.keywords['search']:
-              if self.keywords['search'][a].search(o['text']):
-                result['action'] = a
+          action = self.parse_keywords(o['text'])
+          if action:
+            result['action'] = action
 
           # Return the relevant parts of this activity.
           if result['action']:
@@ -76,6 +106,36 @@ class SlackBotLang:
           return result
 
     return result
+
+
+  def set_commands(self):
+    """
+    Keywords for which the bot should execute specific commands; these follow
+    @bot mentions.
+    """
+    self.commands = {
+      'opinion':      re.compile('(what do you think|what\'s your opinion|what is your opinion) (of|about)', flags=re.I),
+      'say':          re.compile('say( that)*', flags=re.I),
+      'tell':         re.compile('tell me about', flags=re.I)
+    }
+
+
+  def set_keywords(self):
+    """
+    Keywords for which the bot should return pre-defined responses, including
+    @bot mentions.
+    """
+    self.keywords = {
+      'search': {
+        'brady':      re.compile('brady', flags=re.I),
+        'buttfumble': re.compile('fumble', flags=re.I),
+        'geno':       re.compile('[g]+[e]+[n]+[o]+', flags=re.I),
+        'jets':       re.compile('[j]+[-]*[e]+[-]*[t]+[-]*[s]+', flags=re.I),
+        'mention':    re.compile(str(self.at())),
+      },
+      'match': {
+        'at_bot':     re.compile(str(self.at()), flags=re.I),
+      }}
 
 
   def read_classifier(self, path):

@@ -1,4 +1,5 @@
 docopt
 espnff
+inflect
 slackclient
 textblob

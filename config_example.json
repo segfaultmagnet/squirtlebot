@@ -1,5 +1,6 @@
 {
   "Debug": false,
+  "Dat_dir": "dat",
   "Log_dir": "logs",
   "Bots":
   {
@@ -10,7 +11,6 @@
       {
         "general": null
       },
-      "Classifier_file": "squirtlebot_testing.dat",
       "League_auth_cookies":
       {
         "espn_s2": "changeme",

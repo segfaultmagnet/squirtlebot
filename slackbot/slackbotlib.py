@@ -196,6 +196,6 @@ class SlackBotLib:
 
 
   def log(self, msg):
-    string = self.name + ': ' + msg
+    string = self.name() + ': ' + str(msg)
     print(string)
     self._logger.add(string)
