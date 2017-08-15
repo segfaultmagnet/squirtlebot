@@ -1,5 +1,7 @@
 docopt
 espnff
 inflect
+lxml
+markovify
 slackclient
 textblob

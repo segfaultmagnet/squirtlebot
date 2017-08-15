@@ -11,12 +11,14 @@ SquirtleBot is a sassy, profane, and trash-talking bot for Slack with a focus on
 
 [espnff](https://github.com/rbarton65/espnff)
 
+[inflect](https://pypi.python.org/pypi/inflect)
+
 [lxml](http://lxml.de/)
 
 [Markovify](https://github.com/jsvine/markovify)
 
-[nflgame](https://github.com/BurntSushi/nflgame)
-
 [Slack Developer Kit](https://github.com/slackapi/python-slackclient)
 
 [TextBlob](https://textblob.readthedocs.io/en/dev/)
+
+Soon: [nflgame](https://github.com/BurntSushi/nflgame)
