@@ -1,7 +1,6 @@
 {
-  "Debug": false,
   "Dat_dir": "dat",
-  "Log_dir": "logs",
+  "Log_path": "logs/example",
   "Bots":
   {
     "SquirtleBot_Testing":

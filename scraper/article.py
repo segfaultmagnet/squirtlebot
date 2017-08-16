@@ -1,23 +1,18 @@
-# Name:         article.py
-# Authors:      Matthew Sheridan
-# time:         09 August 2017
-# Revision:     09 August 2017
-# Copyright:    Matthew Sheridan 2017
-# Licence:      Beer-Ware License Rev. 42
-
-
-__author__  = 'Matthew Sheridan'
-__credits__ = ['Matthew Sheridan']
-__time__    = '09 August 2017'
-__version__ = '0.1'
-__status__  = 'Development'
-
+__author__     = 'Matthew Sheridan'
+__copyright__  = 'Copyright 2017, Matthew Sheridan'
+__license__    = 'Beer-Ware License Rev. 42'
+__maintainer__ = 'Matthew Sheridan'
+__email__      = 'segfaultmagnet@gmail.com'
+__website__    = 'https://github.com/segfaultmagnet'
+__credits__    = ['Matthew Sheridan']
+__version__    = '0.1'
+__status__     = 'Development'
 
 import time
 
 from textblob import TextBlob
 
-class Article:
+class Article(object):
   def __init__(self, url, title=None, blob=None):
     """
     Args:
@@ -27,24 +22,34 @@ class Article:
 
       blob:   the TextBlob representation of the article's content
     """
-    self._set_url(url)
-    self.set_title(title)
-    self.set_blob(blob)
+    self.url(url=url)
+    self.title(title=title)
+    self.blob(blob=blob)
 
     self._time = None
     self._tags = self._build_tags()
 
+  def blob(self, blob=None):
+    """
+    Sets self._blob and records the time at which the article was accesssed
 
-# Accessors
-  def blob(self):
-    """ Returns the TextBlob representation of the article's content """
+    Args:
+      blob:  the TextBlob representation of the article's content
+
+    Returns: the TextBlob representation of the article's content
+
+    Raises:
+      TypeError: if blob is not a TextBlob
+    """
+    if blob:
+      assert type(blob) is TextBlob or blob == None, "arg 'blob' is not of type 'TextBlob': %r" % repr(type(blob))
+      self._blob = blob
+      self._time = time.gmtime()
     return self._blob
-
 
   def content(self):
     """ Returns the string representation of the article's content """
     return str(self._blob)
-
 
   def tags(self):
     """
@@ -53,51 +58,24 @@ class Article:
     """
     return self._tags
 
-
   def time(self):
     """ Returns the GMT time at which this article was retrieved """
     return self._time
 
-
-  def title(self):
+  def title(self, title=None):
     """ Returns the title of the article """
+    if title:
+      assert type(title) is str or title == None, "arg 'title' is not of type 'str': %r" % repr(type(title))
+      self._title = title
     return self._title
 
-
-  def url(self):
+  def url(self, url=None):
     """ Returns the URL from which the article was retrieved or can be found """
+    if url:
+      assert type(url) is str, "arg 'url' is not of type 'str': %r" % repr(type(url))
+      self._url = url
     return self._url
 
-
-# Mutators
-  def set_blob(self, blob):
-    """
-    Sets self._blob and records the time at which the article was accesssed
-
-    Args:
-      blob:   the TextBlob representation of the article's content
-
-    Raises:
-      TypeError: if blob is not a TextBlob
-    """
-    assert type(blob) is TextBlob or blob == None, "arg 'blob' is not of type 'TextBlob': %r" % repr(type(blob))
-    self._blob = blob
-    self._time = time.gmtime()
-
-
-  def set_title(self, title):
-    """ Sets the title of the article """
-    assert type(title) is str or title == None, "arg 'title' is not of type 'str': %r" % repr(type(title))
-    self._title = title
-
-
-  def _set_url(self, url):
-    """ Sets the URL of the article """
-    assert type(url) is str, "arg 'url' is not of type 'str': %r" % repr(type(url))
-    self._url = url
-
-
-# Private methods
   def _build_tags(self):
     """
     Returns a list of tags (team, player names) found in this article.

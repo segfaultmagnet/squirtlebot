@@ -2,6 +2,8 @@
 SquirtleBot is a sassy, profane, and trash-talking bot for Slack with a focus on fantasy football-related commentary. May or may not serve a useful purpose, probably doesn't like Tom Brady, and is certainly not safe for work.
 
 # To-Do
+- [ ] League information: (status of matchups, overall standings)
+
 - [ ] Implement article tagging.
 
 - [ ] Markovify articles.

@@ -1,17 +1,12 @@
-# Name:         slackbot.py
-# Authors:      Matthew Sheridan
-# Date:         04 August 2017
-# Revision:     10 August 2017
-# Revision:     08 August 2017
-# Copyright:    Matthew Sheridan 2017
-# Licence:      Beer-Ware License Rev. 42
-
-
-__author__  = 'Matthew Sheridan'
-__credits__ = ['Matthew Sheridan']
-__date__    = '08 August 2017'
-__version__ = '0.1'
-__status__  = 'Development'
+__author__     = 'Matthew Sheridan'
+__copyright__  = 'Copyright 2017, Matthew Sheridan'
+__license__    = 'Beer-Ware License Rev. 42'
+__maintainer__ = 'Matthew Sheridan'
+__email__      = 'segfaultmagnet@gmail.com'
+__website__    = 'https://github.com/segfaultmagnet'
+__credits__    = ['Matthew Sheridan']
+__version__    = '0.1'
+__status__     = 'Development'
 
 import os
 import sys
@@ -21,155 +16,150 @@ import string
 import threading
 import time
 
+from datetime import datetime, timedelta
 from types import *
-
-import inflect
 
 from espnff import League, Team
 from slackclient import SlackClient
+from textblob import TextBlob
 
+from .actionhandler import SquirtleActionHandler
+from .leaguehandler import LeagueHandler
 from .slackbotlang import SlackBotLang
 from .slackbotlib import SlackBotLib
 
-
-class SlackBot(SlackBotLang, SlackBotLib, threading.Thread):
+class SlackBot(SlackBotLib, threading.Thread):
   def __init__(self, name, config, debug=False):
     super(SlackBot, self).__init__()
 
+    self._config          = config
     self.DEBUG            = debug
-    self._logger          = config['Logger']
+
+    self.dbg = self._config['Logger'].debug
+    self.info = self._config['Logger'].info
+    self.warn = self._config['Logger'].warn
+    self.err = self._config['Logger'].error
+    self.crit = self._config['Logger'].critical
 
     self._client          = SlackClient(config['API_token'])
-    self._channels        = config['Channels']
     self._classifier_path = os.path.relpath(config['Dat_dir'] + '/' + self.name_lower() + '.classifier', start=config['Root'])
-    self._league          = League(config['League ID'],
-                                   config['League year'], 
-                                   espn_s2=config['League_auth_cookies']['espn_s2'],
-                                   swid=config['League_auth_cookies']['SWID'])
-    self._league_prev     = League(config['League ID'],
-                                   config['League year'] - 1, 
-                                   espn_s2=config['League_auth_cookies']['espn_s2'],
-                                   swid=config['League_auth_cookies']['SWID'])
 
+    self._refreshtime     = 30
     self._run             = True
     self._sleeptime       = 1
     self._stopped         = False
 
     self._at              = None
     self._id              = None
-    self._p               = inflect.engine()
-    self.commands         = {}
-    self.keywords         = {}
 
     self.set_name(name)
-    self.set_id(self.get_user_id(self.name_lower()))
-    self.set_commands()
-    self.set_keywords()
-    self.init_classifier()
+    self._set_id(self.get_user_id(self.name_lower()))
+    # self.init_classifier()
     self.init_channels()
 
-
   def run(self):
-    if self.DEBUG == True:
-      self.log('Starting in DEBUG mode.')
+    if self.DEBUG:
+      self.info('Starting in DEBUG mode.')
     else:
-      self.log('Starting.')
+      self.info('Starting.')
 
-    if self._league:
-      settings = self._league.settings
-      self.log('League: ' + repr(settings.name) + ' (' + str(settings.year) + ')')
+    # Set up a new handlers and fetch the current year's league.
+    actions = SquirtleActionHandler(self.name(), self.at())
+    leagues = LeagueHandler(lid=self._config['League ID'],
+                            year=self._config['League year'],
+                            espn_s2=self._config['League_auth_cookies']['espn_s2'],
+                            swid=self._config['League_auth_cookies']['SWID'])
+    settings = leagues.get().settings
+    if settings:
+      self.info('League: ' + repr(settings.name) + ' (' + str(settings.year) + ')')
+    else:
+      raise Exception('League error.')
 
     # Connect.
     if self._client.rtm_connect():
-      self.log('Connected.')
+      self.info('Connected as ' + repr(self.name()))
 
-    # Respond to stuff.
-    while self._run == True:
-      output = self.parse_rtm(self._client.rtm_read())
-      if output['blob']:
-        self.log(repr(output['user']['name']) + ' in '
-                 + repr(output['channel']['name']) + ':\n  \''
-                 + str(output['blob']) + '\'')
+      # Respond to stuff where appropriate.
+      while self._run == True:
+        output = self.parse_rtm(self._client.rtm_read())
 
-        # Only output to channels allowed.
-        if output['channel']['name'] in self._channels.keys():
-          self.handle_action(output)
+        if output['blob'] and output['channel']['name'] in self.channels().keys():
+          action, text = actions.parse_keywords(text=str(output['blob']))
+          result = None
 
-      time.sleep(1)
+          if action:
+            args = {
+              'action': action,
+              'text': text
+            }
 
-    self.log('Exiting.')
+            if action == 'tell':
+              args['teams'] = leagues.get().teams
+              args['teams_prev'] = leagues.get(2016).teams
+              # args['team_owner'] = 
+
+            result = actions.exec_action(**args)
+
+          if result:
+            self.post_msg(output['channel']['id'], result)
+
+        time.sleep(1)
+
+    self.info('Exiting.')
     self._stopped = True
     sys.exit()
 
-
-  def handle_action(self, output):
+  def parse_rtm(self, output):
     """
-    Give an appropriate and clever response (maybe).
+    Returns: if this bot is mentioned, a dict containing:
+               a TextBlob of the message
+               the channel in which it was sent
+               the user who sent it
     """
-    action  = output['action'].lower()
-    blob    = output['blob']
-    channel = output['channel']
-    user    = output['user']
+    result = {'blob': None,
+              'channel': {'name': None, 'id': None},
+              'user': {'name': None, 'id': None}}
+    if output and len(output) > 0:
+      for o in output:
+        if o and 'text' in o and o['user'] != self.id():
+          result['blob']            = TextBlob(o['text'])
+          result['channel']['id']   = o['channel']
+          result['user']['id']      = o['user']
+          result['channel']['name'] = self.get_channel_name(result['channel']['id'])
+          result['user']['name']    = self.get_user_name(result['user']['id'])
+        return result
+    return result
 
-    if action == 'brady':
-      self.post_msg(channel['id'], 'Eat my nards, Tom Brady.')
+  def channels(self):
+    return self._config['Channels']
 
-    elif action == 'geno':
-      self.post_msg(channel['id'], 'GEEENNNOOO')
+  def at(self):
+    return str(self._at)
 
-    elif action == 'buttfumble' or action == 'jets':
-      self.post_msg(channel['id'], 'GO JETS')
+  def id(self):
+    return str(self._id)
 
-    elif action == 'mention':
-      if re.search('good night', str(blob), flags=re.I):
-        self.post_msg(channel['id'], 'Shoo, ' + self.at_user(user['id']))
-      else:
-        self.post_msg(channel['id'], 'Sup, ' + self.at_user(user['id']))
+  def name(self):
+    return str(self._name)
 
-    if action == 'at_bot':
-      text = re.sub(self.at() + ' ', '', str(blob), count=1)
-      command, text = self.parse_commands(text)
-      words = text.strip(string.punctuation).split()
-      msg = ''
+  def name_lower(self):
+    return str(self._name.lower())
 
-      if command == 'opinion':
-        msg = ' '.join(words)
-        if msg[len(msg)-1].lower() == 's':
-          msg += ' are'
-        else:
-          msg += ' is'
-        self.post_msg(channel['id'], msg + ' really, truly terrible.')
+  def stopped(self):
+    return self._stopped
 
-      elif command == 'say':
-        self.post_msg(channel['id'], text)
+  def _set_at(self, id_str):
+    assert type(id_str) is str, 'ID is not a string.'
+    self._at = '<@' + self.id() + '>'
 
-      elif command == 'tell':
-        teams = self._league.teams
-        teams_prev = self._league_prev.teams
-        team_owner = re.sub('\'s', '', words[0], flags=re.I)
-        team_name       = None
-        team_place_prev = None
+  def _set_id(self, id_str):
+    assert type(id_str) is str, 'ID is not a string.'
+    self._id = id_str
+    self._set_at(self.id())
 
-        for t in teams:
-          if t.owner.split()[0].lower() == team_owner.lower():
-            team_name = t.team_name
-        for t in teams_prev:
-          if t.owner.split()[0].lower() == team_owner.lower():
-            team_place_prev = t.overall_standing
+  def set_name(self, name):
+    assert type(name) is str, 'Name is not a string.'
+    self._name = name
 
-        if team_name:
-          msg = team_name + ' are terrible and ' + self.capitalize(team_owner) \
-                + ' is totally clueless.'
-          if team_place_prev:
-            msg += ' He somehow came in ' + self._p.ordinal(team_place_prev) \
-                   + ' last year, but he\'ll manage to do worse this year.'
-        else:
-          msg = 'I don\'t know who ' + self.capitalize(team_owner) \
-                + ' is, but I bet he sucks at fantasy.'
-
-        self.post_msg(channel['id'], msg)
-
-      else:
-        self.post_msg(channel['id'], 'What do you want?')
-
-    return
+  def stop(self):
+    self._run = False

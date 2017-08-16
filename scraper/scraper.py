@@ -1,12 +1,4 @@
-#!/usr/bin/python3
-
-# Name:         scraper.py
-# Authors:      Matthew Sheridan
-# Date:         09 August 2017
-# Revision:     10 August 2017
-# Copyright:    Matthew Sheridan 2017
-# Licence:      Beer-Ware License Rev. 42
-
+#!/usr/bin/env python3
 """
 Utility for scraping webpages for football commentary. Currently configured to
 scrape Deadspin for articles tagged with 'NFL'. Writes out a dict of Articles
@@ -27,13 +19,15 @@ Options:
   -v, --version  Display program version number.
 """
 
-
-__author__  = 'Matthew Sheridan'
-__credits__ = ['Matthew Sheridan']
-__date__    = '09 August 2017'
-__version__ = '0.1'
-__status__  = 'Development'
-
+__author__     = 'Matthew Sheridan'
+__copyright__  = 'Copyright 2017, Matthew Sheridan'
+__license__    = 'Beer-Ware License Rev. 42'
+__maintainer__ = 'Matthew Sheridan'
+__email__      = 'segfaultmagnet@gmail.com'
+__website__    = 'https://github.com/segfaultmagnet'
+__credits__    = ['Matthew Sheridan']
+__version__    = '0.1'
+__status__     = 'Development'
 
 import os
 import sys
@@ -67,17 +61,12 @@ class Scraper(threading.Thread):
     self._run       = True
     self._stopped   = False
 
-
-# Accessors
   def articles(self):
     return self._articles
-
 
   def stopped(self):
     return self._stopped
 
-
-# Mutators
   def run(self):
     article_scraper = ArticleScraper()
     article_scraper.start()
@@ -115,12 +104,9 @@ class Scraper(threading.Thread):
 
     self._stopped = True
 
-
   def stop(self):
     self._run = False
 
-
-# Private methods
   def _dump_articles(self, articles, path):
     """
     Writes the collected articles to file.
@@ -132,7 +118,6 @@ class Scraper(threading.Thread):
     """
     with open(path, 'wb+') as out_file:
       pickle.dump(articles, out_file)
-
 
   def _load_articles(self, path):
     """
@@ -155,7 +140,6 @@ class Scraper(threading.Thread):
 
     return articles
 
-
   def _get_article_urls(self, url):
     """
     Args:
@@ -175,7 +159,6 @@ class Scraper(threading.Thread):
     urls = tree.xpath('//figure[@class="asset marquee-asset js_marquee-assetfigure "]/a[@href]/attribute::href')
     
     return urls
-
 
 def __init__(args):
   root    = os.path.abspath(os.path.dirname(__file__))
@@ -197,7 +180,6 @@ def __init__(args):
   finally:
     scraper.stop()
     print('Done.')
-
 
 if __name__ == '__main__':
   __init__(docopt(__doc__, help=True, version=__version__))

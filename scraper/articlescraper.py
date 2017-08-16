@@ -1,15 +1,17 @@
-# Name:         articlescraper.py
-# Authors:      Matthew Sheridan
-# Date:         10 August 2017
-# Revision:     10 August 2017
-# Copyright:    Matthew Sheridan 2017
-# Licence:      Beer-Ware License Rev. 42
-
 """
 Scrapes list of articles. Currently configured to scrape Deadspin for articles
 tagged with 'NFL'.
 """
 
+__author__     = 'Matthew Sheridan'
+__copyright__  = 'Copyright 2017, Matthew Sheridan'
+__license__    = 'Beer-Ware License Rev. 42'
+__maintainer__ = 'Matthew Sheridan'
+__email__      = 'segfaultmagnet@gmail.com'
+__website__    = 'https://github.com/segfaultmagnet'
+__credits__    = ['Matthew Sheridan']
+__version__    = '0.1'
+__status__     = 'Development'
 
 import requests
 import threading
@@ -22,7 +24,6 @@ from textblob import TextBlob
 
 from article import Article
 
-
 class ArticleScraper(threading.Thread):
   def __init__(self):
     super(ArticleScraper, self).__init__()
@@ -32,7 +33,6 @@ class ArticleScraper(threading.Thread):
 
     self._run = True
     self._stopped = False
-
 
   def run(self):
     while self._run:
@@ -44,11 +44,8 @@ class ArticleScraper(threading.Thread):
 
     self._stopped = True
 
-
-# Accessors
   def __len__(self):
     return len(self._url_deque)
-
 
   def pop_left(self):
     """
@@ -61,22 +58,16 @@ class ArticleScraper(threading.Thread):
       pass
     return new_article
 
-
   def stopped(self):
     return self._stopped
 
-
-# Mutators
   def append(self, url):
     assert type(url) is str, "arg 'url' is not of type 'str': %r" % repr(type(url))
     self._url_deque.append(str(url))
 
-
   def stop(self):
     self._run = False
 
-
-# Private methods
   def _get_article(self, url):
     """
     Args:
@@ -88,15 +79,15 @@ class ArticleScraper(threading.Thread):
       the title of the article
     """
     assert type(url) is str, "arg 'url' is not of type 'str': %r" % repr(type(url))
-    content = ''
+    content = []
     title   = ''
 
     page = requests.get(url)
     tree = html.fromstring(page.content)
     paras = tree.xpath('//div[@class="post-content entry-content js_entry-content "]/p')
     for p in paras:
-      content += str(p.text_content()) + '\n'
+      content.append(str(p.text_content()) + '\n')
     header = tree.xpath('//h1[@class="headline hover-highlight entry-title js_entry-title"]/a')
     title = str(header[0].text_content())
 
-    return TextBlob(content), title
+    return TextBlob(''.join(content)), title
