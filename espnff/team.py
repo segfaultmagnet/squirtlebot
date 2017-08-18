@@ -3,7 +3,7 @@ class Team(object):
     def __init__(self, data):
         self.team_id = data['teamId']
         self.team_abbrev = data['teamAbbrev']
-        self.team_name = "%s %s" % (data['teamLocation'], data['teamNickname'])
+        self.team_name = "%s %s" % (data['teamLocation'].strip(), data['teamNickname'].strip())
         self.division_id = data['division']['divisionId']
         self.division_name = data['division']['divisionName']
         self.wins = data['record']['overallWins']
@@ -11,8 +11,9 @@ class Team(object):
         self.points_for = data['record']['pointsFor']
         self.points_against = data['record']['pointsAgainst']
         self.overall_standing = data['overallStanding']
-        self.owner = "%s %s" % (data['owners'][0]['firstName'],
-                                data['owners'][0]['lastName'])
+        self.owner = "%s %s" % (data['owners'][0]['firstName'].strip(),
+                                data['owners'][0]['lastName'].strip())
+        self.owner_id = data['owners'][0]['userProfileId']
         self.schedule = []
         self.scores = []
         self.mov = []

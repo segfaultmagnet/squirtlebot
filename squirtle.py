@@ -35,10 +35,10 @@ from docopt import docopt
 from slackbot import SlackBot
 
 def _assert_config(config):
-  for b in config['Bots']:
-    assert config['Bots'][b]['API_token'] != 'changeme', "Change \'API_token\' from default: %r" % config['Bots'][b]['API_token']
-    assert config['Bots'][b]['League ID'] != 12345, "Change \'League ID\' from default: %r" % config['Bots'][b]['League ID']
-    assert config['Bots'][b]['League year'] != 12345, "Change \'League year\' from default: %r" % config['Bots'][b]['League year']
+  for b in config:
+    assert config[b]['API_token'] != 'changeme', "Change \'API_token\' from default: %r" % config[b]['API_token']
+    assert config[b]['League ID'] != 12345, "Change \'League ID\' from default: %r" % config[b]['League ID']
+    assert config[b]['League year'] != 12345, "Change \'League year\' from default: %r" % config[b]['League year']
 
 def _main(bots, logger):
   print('Starting bots:')
@@ -79,7 +79,9 @@ def __init__(args):
   
   logger = logging.getLogger(str(__name__))
   logger.setLevel(level)
-  handler = logging.FileHandler(os.path.relpath(config['Log_path'] + '.log'))
+  handler = logging.FileHandler(
+    os.path.relpath(
+      'logs/' + os.path.basename(__file__).split('.')[0] + '.log'))
   handler.setFormatter(
     logging.Formatter(
       fmt='%(asctime)s %(module)s: %(funcName)s(%(lineno)s) %(levelname)s: %(message)s',
@@ -89,10 +91,10 @@ def __init__(args):
 
   bots  = []
 
-  for b in config['Bots']:
+  for b in config:
     name = b
-    botconfig = config['Bots'][b]
-    botconfig['Dat_dir'] = config['Dat_dir']
+    botconfig = config[b]
+    botconfig['Dat_dir'] = 'dat'
     botconfig['Logger']  = logger.getChild(name)
     botconfig['Root']    = root
     bots.append(SlackBot(name, botconfig, debug=DEBUG))

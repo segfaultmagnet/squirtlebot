@@ -8,6 +8,9 @@ __credits__    = ['Matthew Sheridan']
 __version__    = '0.1'
 __status__     = 'Development'
 
+import json
+import requests
+
 from datetime import datetime, timedelta
 
 from espnff import League
@@ -18,12 +21,28 @@ class LeagueHandler(object):
     self._year     = year
     self._espn_s2  = espn_s2
     self._swid     = swid
+    self._current_week = None
     self._refresh_time = 30
     if refresh_time:
       self._refresh_time = refresh_time
 
     self._leagues  = {}
     self._fetched  = {}
+
+  def get(self, year=None):
+    league = None
+    if year in self._leagues and self._fetched[year] \
+      and datetime.now() < (self._fetched[year] + timedelta(minutes=self._refresh_time)):
+      league = self._leagues[year]
+    else:
+      league = self._fetch_league(year)
+      self._current_week = self._fetch_week()
+    return league
+
+  def current_week(self):
+    if not self._current_week:
+      self._fetch_week()
+    return self._current_week
 
   def _fetch_league(self, year=None):
     if not year:
@@ -35,11 +54,11 @@ class LeagueHandler(object):
       raise Exception('Error fetching league (year=' + repr(year) + ')')
     return league
 
-  def get(self, year=None):
-    league = None
-    if year in self._leagues and self._fetched[year] \
-      and datetime.now() < (self._fetched[year] + timedelta(minutes=self._refresh_time)):
-      league = self._leagues[year]
-    else:
-      league = self._fetch_league(year)
-    return league
+  def _fetch_week(self):
+    params = {
+      'leagueId': self._lid,
+      'seasonId': self._year
+    }
+    r = requests.get('http://games.espn.com/ffl/api/v2/scoreboard', params=params)
+    data = r.json()
+    return data['scoreboard']['matchupPeriodId']

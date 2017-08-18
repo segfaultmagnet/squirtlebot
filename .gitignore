@@ -1,6 +1,6 @@
-dat/
-logs/
-media/*
+dat/*
+logs/*
+media/
 __pycache__/
 config.json
 fantasy.py

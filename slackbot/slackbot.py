@@ -12,7 +12,6 @@ import os
 import sys
 import json
 import re
-import string
 import threading
 import time
 
@@ -28,34 +27,33 @@ from .leaguehandler import LeagueHandler
 from .slackbotlang import SlackBotLang
 from .slackbotlib import SlackBotLib
 
-class SlackBot(SlackBotLib, threading.Thread):
+class SlackBot(threading.Thread):
   def __init__(self, name, config, debug=False):
     super(SlackBot, self).__init__()
+    self._config = config
+    self.DEBUG   = debug
+    self._at   = None
+    self._id   = None
+    self._name = None
 
-    self._config          = config
-    self.DEBUG            = debug
-
-    self.dbg = self._config['Logger'].debug
+    self.dbg  = self._config['Logger'].debug
     self.info = self._config['Logger'].info
     self.warn = self._config['Logger'].warn
-    self.err = self._config['Logger'].error
+    self.err  = self._config['Logger'].error
     self.crit = self._config['Logger'].critical
 
     self._client          = SlackClient(config['API_token'])
     self._classifier_path = os.path.relpath(config['Dat_dir'] + '/' + self.name_lower() + '.classifier', start=config['Root'])
 
-    self._refreshtime     = 30
-    self._run             = True
-    self._sleeptime       = 1
-    self._stopped         = False
+    self._refreshtime = 30
+    self._run         = True
+    self._sleeptime   = 0.5
+    self._stopped     = False
 
-    self._at              = None
-    self._id              = None
-
-    self.set_name(name)
-    self._set_id(self.get_user_id(self.name_lower()))
-    # self.init_classifier()
-    self.init_channels()
+    self.name(name)
+    self.id(self._user_id(self.name_lower()))
+    # self._init_classifier()
+    self._init_channels()
 
   def run(self):
     if self.DEBUG:
@@ -64,57 +62,67 @@ class SlackBot(SlackBotLib, threading.Thread):
       self.info('Starting.')
 
     # Set up a new handlers and fetch the current year's league.
-    actions = SquirtleActionHandler(self.name(), self.at())
-    leagues = LeagueHandler(lid=self._config['League ID'],
-                            year=self._config['League year'],
-                            espn_s2=self._config['League_auth_cookies']['espn_s2'],
-                            swid=self._config['League_auth_cookies']['SWID'])
-    settings = leagues.get().settings
-    if settings:
-      self.info('League: ' + repr(settings.name) + ' (' + str(settings.year) + ')')
-    else:
-      raise Exception('League error.')
+    self.actions = SquirtleActionHandler(self.name(), self.at(), cheeky=True)
+    self.league = LeagueHandler(lid=self._config['League ID'],
+                    year=self._config['League year'],
+                    espn_s2=self._config['League_auth_cookies']['espn_s2'],
+                    swid=self._config['League_auth_cookies']['SWID'])
+    settings = self.league.get().settings
 
     # Connect.
-    if self._client.rtm_connect():
-      self.info('Connected as ' + repr(self.name()))
+    if self._client.rtm_connect() and settings:
+      connect_msg = 'Connected as ' + repr(self.name())
+      league_msg = 'League: ' + repr(settings.name) + ' (' + str(settings.year) + ')'
+      self.info(connect_msg)
+      self.info(league_msg)
+      print(connect_msg)
+      print(league_msg)
 
       # Respond to stuff where appropriate.
       while self._run == True:
         output = self.parse_rtm(self._client.rtm_read())
-
         if output['blob'] and output['channel']['name'] in self.channels().keys():
-          action, text = actions.parse_keywords(text=str(output['blob']))
-          result = None
-
-          if action:
+          execute = self.actions.parse_keywords(text=str(output['blob']))
+          if execute:
             args = {
-              'action': action,
-              'text': text
+              'text': str(output['blob']),
+              'channel': output['channel'],
+              'user': output['user'],
             }
-
-            if action == 'tell':
-              args['teams'] = leagues.get().teams
-              args['teams_prev'] = leagues.get(2016).teams
-              # args['team_owner'] = 
-
-            result = actions.exec_action(**args)
-
-          if result:
-            self.post_msg(output['channel']['id'], result)
-
-        time.sleep(1)
+            self.handle_action(execute, **args)
+        time.sleep(self._sleeptime)
 
     self.info('Exiting.')
     self._stopped = True
     sys.exit()
 
+  def handle_action(self, execute, **kwargs):
+    results = []
+    for e in execute:
+      kwargs['action'] = e
+      kwargs['regex'] = execute[e]
+
+      if e == 'matchup':
+        kwargs['teams'] = self.league.get().teams
+        kwargs['players'] = self.league.get().players
+        kwargs['week'] = self.league.current_week()
+
+      if e == 'tell':
+        kwargs['teams'] = self.league.get().teams
+        kwargs['teams_prev'] = self.league.get(self._config['League year']-1).teams
+
+      for a in self.actions.exec_action(**kwargs):
+        results.append(a)
+
+    for r in results:
+      self.post_msg(kwargs['channel']['id'], r)
+
   def parse_rtm(self, output):
     """
-    Returns: if this bot is mentioned, a dict containing:
-               a TextBlob of the message
-               the channel in which it was sent
-               the user who sent it
+    Returns a dict containing:
+      a TextBlob of the message
+      the channel in which it was sent
+      the user who sent it
     """
     result = {'blob': None,
               'channel': {'name': None, 'id': None},
@@ -125,41 +133,73 @@ class SlackBot(SlackBotLib, threading.Thread):
           result['blob']            = TextBlob(o['text'])
           result['channel']['id']   = o['channel']
           result['user']['id']      = o['user']
-          result['channel']['name'] = self.get_channel_name(result['channel']['id'])
-          result['user']['name']    = self.get_user_name(result['user']['id'])
+          result['channel']['name'] = self._channel_name(result['channel']['id'])
+          user = self._user_name(result['user']['id'])
+          result['user']['name']       = user['name']
+          result['user']['first_name'] = user['first_name']
+          result['user']['last_name']  = user['last_name']
         return result
     return result
+
+  def post_msg(self, channel, msg):
+    """ Sends a message to the given channel or user. """
+    self._client.api_call(
+      'chat.postMessage',
+      channel=channel,
+      text=msg,
+      as_user=True)
+    self.dbg('Posted in ' + repr(self._channel_name(channel)) + ':\n ' + repr(msg))
+
+  def at(self, id_str=None):
+    if id_str:
+      assert type(id_str) is str, 'ID is not a string.'
+      self._at = '<@' + id_str + '>'
+    return str(self._at)
+
+  def id(self, id_str=None):
+    if id_str:
+      assert type(id_str) is str, 'ID is not a string.'
+      self._id = id_str
+      self.at(self._id)
+    return str(self._id)
 
   def channels(self):
     return self._config['Channels']
 
-  def at(self):
-    return str(self._at)
-
-  def id(self):
-    return str(self._id)
-
-  def name(self):
+  def name(self, name=None):
+    if name:
+      assert type(name) is str, 'Name is not a string.'
+      self._name = name
     return str(self._name)
 
   def name_lower(self):
-    return str(self._name.lower())
+    return str(self.name().lower())
 
   def stopped(self):
     return self._stopped
 
-  def _set_at(self, id_str):
-    assert type(id_str) is str, 'ID is not a string.'
-    self._at = '<@' + self.id() + '>'
-
-  def _set_id(self, id_str):
-    assert type(id_str) is str, 'ID is not a string.'
-    self._id = id_str
-    self._set_at(self.id())
-
-  def set_name(self, name):
-    assert type(name) is str, 'Name is not a string.'
-    self._name = name
-
   def stop(self):
     self._run = False
+
+  def _init_channels(self):
+    self._config['Channels'] = SlackBotLib.init_channels(
+      client=self._client,
+      channels=self.channels())
+
+  def _channel_id(self, name):
+    return SlackBotLib.channel_id(
+      client=self._client,
+      channels=self.channels(),
+      name=name)
+
+  def _channel_name(self, id_str):
+    return SlackBotLib.channel_name(
+      client=self._client,
+      channels=self.channels(),
+      id_str=id_str)
+
+  def _user_id(self, name):
+    return SlackBotLib.user_id(self._client, name)
+
+  def _user_name(self, id_str):
+    return SlackBotLib.user_name(self._client, id_str)

@@ -5,6 +5,7 @@ from .utils import (two_step_dominance,
 from .team import Team
 from .settings import Settings
 from .matchup import Matchup
+from .player import Player
 from .exception import (PrivateLeagueException,
                         InvalidLeagueException,
                         UnknownLeagueException, )
@@ -17,6 +18,7 @@ class League(object):
         self.year = year
         self.ENDPOINT = "http://games.espn.com/ffl/api/v2/"
         self.teams = []
+        self.players = []
         self.espn_s2 = espn_s2
         self.swid = swid
         self._fetch_league()
@@ -50,8 +52,19 @@ class League(object):
         elif self.status != 200:
             raise UnknownLeagueException('Unknown %s Error' % self.status)
 
+        self._fetch_players(data)
         self._fetch_teams(data)
         self._fetch_settings(data)
+
+    def _fetch_players(self, data):
+        '''Fetch players in league'''
+        players = data['leaguesettings']['leagueMembers']
+
+        for player in players:
+            self.players.append(Player(player))
+
+        # sort by player's last name, then first name
+        self.players = sorted(self.players, key=lambda x: (x.last_name, x.first_name), reverse=False)
 
     def _fetch_teams(self, data):
         '''Fetch teams in league'''

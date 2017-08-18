@@ -43,8 +43,8 @@ from docopt import docopt
 from lxml import html
 from textblob import TextBlob
 
-from article import Article
-from articlescraper import ArticleScraper
+from .article import Article
+from .articlescraper import ArticleScraper
 
 class Scraper(threading.Thread):
   def __init__(self, articles_path, look_back_pages=2, page_increment=20):

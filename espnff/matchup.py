@@ -14,7 +14,7 @@ class Matchup(object):
             self.home_score = self.data['teams'][0]['score']
             self.away_team = self.data['teams'][1]['teamId']
             self.away_score = self.data['teams'][1]['score']
-        elif self.data['teams'][0]['home'] and not self.data['bye']:
+        elif self.data['teams'][1]['home'] and not self.data['bye']:
             self.home_team = self.data['teams'][1]['teamId']
             self.home_score = self.data['teams'][1]['score']
             self.away_team = self.data['teams'][0]['teamId']
