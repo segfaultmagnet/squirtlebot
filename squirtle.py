@@ -87,7 +87,6 @@ def __init__(args):
       fmt='%(asctime)s %(module)s: %(funcName)s(%(lineno)s) %(levelname)s: %(message)s',
       datefmt='%Y/%m/%d %H:%M:%S'))
   logger.addHandler(handler)
-  logger.info('hi')
 
   bots  = []
 
