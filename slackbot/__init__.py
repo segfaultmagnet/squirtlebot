@@ -9,6 +9,7 @@ __version__    = '0.1'
 __status__     = 'Development'
 
 from .slackbot import SlackBot
+from .squirtlebot import SquirtleBot
 from .actionhandler import SquirtleActionHandler
 from .leaguehandler import LeagueHandler
 # from .slackbotlang import SlackBotLang

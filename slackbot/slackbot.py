@@ -18,13 +18,10 @@ import time
 from datetime import datetime, timedelta
 from types import *
 
-from espnff import League, Team
 from slackclient import SlackClient
 from textblob import TextBlob
 
-from .actionhandler import SquirtleActionHandler
-from .leaguehandler import LeagueHandler
-from .slackbotlang import SlackBotLang
+from .actionhandler import ActionHandler
 from .slackbotlib import SlackBotLib
 
 class SlackBot(threading.Thread):
@@ -42,41 +39,29 @@ class SlackBot(threading.Thread):
     self.err  = self._config['Logger'].error
     self.crit = self._config['Logger'].critical
 
-    self._client          = SlackClient(config['API_token'])
-    self._classifier_path = os.path.relpath(config['Dat_dir'] + '/' + self.name_lower() + '.classifier', start=config['Root'])
+    self._client = SlackClient(config['API_token'])
 
-    self._refreshtime = 30
     self._run         = True
-    self._sleeptime   = 0.5
+    self._sleeptime   = 1
     self._stopped     = False
 
     self.name(name)
     self.id(self._user_id(self.name_lower()))
-    # self._init_classifier()
     self._init_channels()
 
-  def run(self):
     if self.DEBUG:
       self.info('Starting in DEBUG mode.')
     else:
       self.info('Starting.')
 
-    # Set up a new handlers and fetch the current year's league.
-    self.actions = SquirtleActionHandler(self.name(), self.at(), cheeky=True)
-    self.league = LeagueHandler(lid=self._config['League ID'],
-                    year=self._config['League year'],
-                    espn_s2=self._config['League_auth_cookies']['espn_s2'],
-                    swid=self._config['League_auth_cookies']['SWID'])
-    settings = self.league.get().settings
+    self.actions = ActionHandler(self.name(), self.at())
 
+  def run(self):
     # Connect.
-    if self._client.rtm_connect() and settings:
+    if self._client.rtm_connect():
       connect_msg = 'Connected as ' + repr(self.name())
-      league_msg = 'League: ' + repr(settings.name) + ' (' + str(settings.year) + ')'
       self.info(connect_msg)
-      self.info(league_msg)
       print(connect_msg)
-      print(league_msg)
 
       # Respond to stuff where appropriate.
       while self._run == True:
@@ -99,23 +84,7 @@ class SlackBot(threading.Thread):
   def handle_action(self, execute, **kwargs):
     results = []
     for e in execute:
-      kwargs['action'] = e
-      kwargs['regex'] = execute[e]
-
-      if e == 'matchup':
-        kwargs['teams'] = self.league.get().teams
-        kwargs['players'] = self.league.get().players
-        kwargs['week'] = self.league.current_week()
-
-      if e == 'tell':
-        kwargs['teams'] = self.league.get().teams
-        kwargs['teams_prev'] = self.league.get(self._config['League year']-1).teams
-
-      for a in self.actions.exec_action(**kwargs):
-        results.append(a)
-
-    for r in results:
-      self.post_msg(kwargs['channel']['id'], r)
+      self.actions.exec_action(self.post_msg, **kwargs)
 
   def parse_rtm(self, output):
     """

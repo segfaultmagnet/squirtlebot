@@ -15,7 +15,8 @@ import inflect
 from .structs import Action, Keyword
 
 class ActionHandler(object):
-  def __init__(self, name):
+  def __init__(self, name, at):
+    self.at = at
     self.name = name
     self._actions  = [
       Action(name='about:author', func=self._action_about_author),

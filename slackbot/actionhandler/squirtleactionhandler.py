@@ -14,12 +14,17 @@ from .actionhandler import *
 
 class SquirtleActionHandler(ActionHandler):
   def __init__(self, name, at, cheeky=True, **kwargs):
-    super(SquirtleActionHandler, self).__init__(name, **kwargs)
-    self.at = at
+    super(SquirtleActionHandler, self).__init__(name=name, at=at, **kwargs)
     self._inflect = inflect.engine()
     self.update(actions=self.actions_fantasy(), keywords=self.keywords_fantasy())
     if cheeky:
       self.update(actions=self.actions_cheeky(), keywords=self.keywords_cheeky())
+
+  def exec_action(self, func, **kwargs):
+    results = super(SquirtleActionHandler, self).exec_action(**kwargs)
+    for r in results:
+      func(kwargs['channel']['id'], r)
+    return results
 
   def actions_cheeky(self):
     return [
@@ -77,8 +82,6 @@ class SquirtleActionHandler(ActionHandler):
     week = kwargs.get('week')
 
     if queried_player.lower() == 'my':
-      print('looking for me')
-      print(repr(kwargs['user']['first_name']))
       queried_player = kwargs['user']['first_name']
     player = None
     for p in kwargs.get('players'):
@@ -109,6 +112,7 @@ class SquirtleActionHandler(ActionHandler):
   """
 
   # This is the next big one:
+  # Add parsing for 'my' or move it up to SlackBot
   def _action_tell(self, **kwargs):
     msg = []
     team_owner = re.findall(kwargs.get('regex'), kwargs.get('text'))[0]
