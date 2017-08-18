@@ -131,4 +131,4 @@ class SquirtleActionHandler(ActionHandler):
     else:
       msg.append('I don\'t know who %s is, but I bet he sucks at fantasy.' % str.capitalize(team_owner))
 
-    return str.capitalize(''.join(msg))
+    return ''.join(msg)

@@ -124,7 +124,7 @@ class SlackBotLib:
         if u['id'].lower() == id_str.lower():
           name['name'] = u['name']
           name['first_name'] = u['profile']['first_name']
-          name['last_name'] = u['profile']['last_name']
+          # name['last_name'] = u['profile']['last_name']
           break
     else:
       raise Exception(api_call.get('error'))

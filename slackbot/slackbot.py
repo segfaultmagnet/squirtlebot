@@ -137,7 +137,7 @@ class SlackBot(threading.Thread):
           user = self._user_name(result['user']['id'])
           result['user']['name']       = user['name']
           result['user']['first_name'] = user['first_name']
-          result['user']['last_name']  = user['last_name']
+          # result['user']['last_name']  = user['last_name']
         return result
     return result
 
