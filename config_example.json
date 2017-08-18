@@ -1,22 +1,17 @@
 {
-  "Dat_dir": "dat",
-  "Log_path": "logs/example",
-  "Bots":
+  "SquirtleBot":
   {
-    "SquirtleBot_Testing":
+    "API_token": "changeme",
+    "Channels":
     {
-      "API_token": "changeme",
-      "Channels":
-      {
-        "general": null
-      },
-      "League_auth_cookies":
-      {
-        "espn_s2": "changeme",
-        "SWID": "changeme"
-      },
-      "League ID": 12345,
-      "League year": 12345
-    }
+      "general": null
+    },
+    "League_auth_cookies":
+    {
+      "espn_s2": "changeme",
+      "SWID": "changeme"
+    },
+    "League ID": 12345,
+    "League year": 12345
   }
 }
