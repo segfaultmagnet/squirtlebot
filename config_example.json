@@ -1,6 +1,7 @@
 {
   "SquirtleBot":
   {
+    "Type": "SquirtleBot",
     "API_token": "changeme",
     "Channels":
     {

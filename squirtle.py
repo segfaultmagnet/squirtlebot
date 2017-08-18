@@ -32,7 +32,7 @@ import time
 
 from docopt import docopt
 
-from slackbot import SquirtleBot
+from slackbot import SlackBot, SquirtleBot
 
 def _assert_config(config):
   for b in config:
@@ -98,7 +98,9 @@ def __init__(args):
     botconfig['Logger']  = logger.getChild(name)
     botconfig['Logger'].setLevel(level)
     botconfig['Root']    = root
-    bots.append(SquirtleBot(name, botconfig, debug=DEBUG))
+
+    # bots.append(SquirtleBot(name, botconfig, debug=DEBUG))
+    bots.append(globals()[botconfig['Type']](name, botconfig, debug=DEBUG))
 
   _main(bots, logger)
 

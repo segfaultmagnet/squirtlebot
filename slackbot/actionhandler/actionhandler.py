@@ -59,7 +59,7 @@ class ActionHandler(object):
         self._keywords.append(k)
 
   def _action_about_author(self, **kwargs):
-    return(__author__ + ' is the author of this bot. Please visit ' + repr(__website__) + '!')
+    return(__author__ + ' is the author of this bot. Please visit %s!' % repr(__website__))
 
   def _action_about_bot(self, **kwargs):
-    return('slackbot is a chatbot created by ' + __author__)
+    return('%s is a chatbot created by %s. Please visit %s!' % (name, __author__, __website__))
