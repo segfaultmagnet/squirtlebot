@@ -1,3 +1,10 @@
+"""
+Defines the specific behavior of a bot. This class can be used to search text
+for specific keywords or regular expressions, returning a Keyword indicating
+the type of response to be given. It also provides definitions for those
+responses and a method for executing them on behalf of the bot.
+"""
+
 __author__     = 'Matthew Sheridan'
 __copyright__  = 'Copyright 2017, Matthew Sheridan'
 __license__    = 'Beer-Ware License Rev. 42'
@@ -19,21 +26,28 @@ class ActionHandler(object):
     self.at = at
     self.name = name
     self._actions  = [
-      Action(name='about:author', func=self._action_about_author),
-      Action(name='about:bot', func=self._action_about_bot)
+      Action(name='about:author', function=self._action_about_author),
+      Action(name='about:bot', function=self._action_about_bot)
     ]
     self._keywords = [
-      Keyword(name='about:author', regex=re.compile(__email__.split('@')[0], flags=re.I)),
-      Keyword(name='about:author', regex=re.compile(__author__, flags=re.I)),
-      Keyword(name='about:bot', regex=re.compile('about:' + name, flags=re.I), re_match=True)
+      Keyword(name='about:author', regex=re.compile('%s|%s' % (__author__, __email__.split('@')[0]), flags=re.I)),
+      Keyword(name='about:bot', regex=re.compile('(?:about|who is) (?:SquirtleBot|%s)' % self.name, flags=re.I)),
     ]
 
   def exec_action(self, **kwargs):
+    """
+    Args:
+      action: Action matching one of the Actions listed in self._actions; this
+              is the Action to be executed. Other args needed for that Action's
+              args are passed through.
+
+    Returns:  Executes the specified method(s) and returns their result, if any.
+    """
     action_name = kwargs.get('action')
     execute = [a for a in self._actions if a.name == action_name]
     result = []
     for e in execute:
-      result.append(e.func(**kwargs))
+      result.append(e.function(**kwargs))
     return result
 
   def parse_keywords(self, **kwargs):
@@ -62,4 +76,4 @@ class ActionHandler(object):
     return(__author__ + ' is the author of this bot. Please visit %s!' % repr(__website__))
 
   def _action_about_bot(self, **kwargs):
-    return('%s is a chatbot created by %s. Please visit %s!' % (name, __author__, __website__))
+    return('%s is a chatbot created by %s. Please visit %s!' % (self.name, __author__, __website__))

@@ -23,16 +23,16 @@ class Action(object):
 
     func:   a function which should be called when this Action is matched
   """
-  def __init__(self, name, func):
+  def __init__(self, name, function):
     self.name = name.lower()
-    self.func = func
+    self.function = function
 
   def __eq__(self, other):
     return self.name == other.name \
-           and self.func == other.func
+           and self.function == other.function
 
   def __repr__(self):
-    return str('Action(name=%s,func=%r)' % (self.name, self.func))
+    return str('Action(name=%s,func=%r)' % (self.name, self.function))
 
   def __str__(self):
     return self.name

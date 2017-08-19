@@ -41,9 +41,7 @@ def _assert_config(config):
     assert config[b]['League year'] != 12345, "Change \'League year\' from default: %r" % config[b]['League year']
 
 def _main(bots, logger):
-  print('Starting bots:')
   for b in bots:
-    print('  ' + b.name())
     b.start()
 
   try:
@@ -97,8 +95,6 @@ def __init__(args):
     botconfig['Logger']  = logger.getChild(name)
     botconfig['Logger'].setLevel(level)
     botconfig['Root']    = root
-
-    # bots.append(SquirtleBot(name, botconfig, debug=DEBUG))
     bots.append(globals()[botconfig['Type']](name, botconfig, debug=DEBUG))
 
   _main(bots, logger)

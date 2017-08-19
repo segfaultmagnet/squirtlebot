@@ -26,19 +26,20 @@ class SquirtleBot(SlackBot):
     else:
       self.info('Starting.')
 
-    # Set up a new handlers and fetch the current year's league.
-    self.actions = SquirtleActionHandler(self.name(), self.at(), cheeky=True)
+  def run(self):
     self.league = LeagueHandler(lid=self._config['League ID'],
                                 year=self._config['League year'],
                                 espn_s2=self._config['League_auth_cookies']['espn_s2'],
                                 swid=self._config['League_auth_cookies']['SWID'])
     settings = self.league.get().settings
     if settings:
-      league_msg = 'League: ' + repr(settings.name) + ' (' + str(settings.year) + ')'
+      league_msg = '%s: League: %r (%s)' % (self.name(), settings.name, settings.year)
       self.info(league_msg)
       print(league_msg)
 
-  def handle_action(self, execute, **kwargs):
+    super(SquirtleBot, self).run()
+
+  def handle_actions(self, execute, **kwargs):
     results = []
     for e in execute:
       kwargs['action'] = e
@@ -54,3 +55,6 @@ class SquirtleBot(SlackBot):
         kwargs['teams_prev'] = self.league.get(self._config['League year']-1).teams
 
       self.actions.exec_action(self.post_msg, **kwargs)
+
+  def set_actions(self):
+    self.actions = SquirtleActionHandler(self.name(), self.at(), cheeky=True)

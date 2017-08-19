@@ -14,30 +14,31 @@ from .actionhandler import *
 
 class SquirtleActionHandler(ActionHandler):
   def __init__(self, name, at, cheeky=True, **kwargs):
-    super(SquirtleActionHandler, self).__init__(name=name, at=at, **kwargs)
+    super(SquirtleActionHandler, self).__init__(name=name, at=at)
     self._inflect = inflect.engine()
     self.update(actions=self.actions_fantasy(), keywords=self.keywords_fantasy())
     if cheeky:
       self.update(actions=self.actions_cheeky(), keywords=self.keywords_cheeky())
 
-  def exec_action(self, func, **kwargs):
+  def exec_action(self, function, **kwargs):
     results = super(SquirtleActionHandler, self).exec_action(**kwargs)
     for r in results:
-      func(kwargs['channel']['id'], r)
+      kwargs['result'] = r
+      function(**kwargs)
     return results
 
   def actions_cheeky(self):
     return [
-      Action(name='brady', func=self._action_brady),
-      Action(name='geno', func=self._action_geno),
-      Action(name='jets', func=self._action_jets),
-      Action(name='lacy', func=self._action_lacy),
+      Action(name='brady', function=self._action_brady),
+      Action(name='geno', function=self._action_geno),
+      Action(name='jets', function=self._action_jets),
+      Action(name='lacy', function=self._action_lacy),
     ]
 
   def actions_fantasy(self):
     return [
-      Action(name='matchup', func=self._action_matchup),
-      Action(name='tell', func=self._action_tell),
+      Action(name='matchup', function=self._action_matchup),
+      Action(name='tell', function=self._action_tell),
       # 'at_bot':  self._action_mention
     ]
 

@@ -41,9 +41,9 @@ class SlackBot(threading.Thread):
 
     self._client = SlackClient(config['API_token'])
 
-    self._run         = True
-    self._sleeptime   = 1
-    self._stopped     = False
+    self._run       = True
+    self._sleeptime = 1
+    self._stopped   = False
 
     self.name(name)
     self.id(self._user_id(self.name_lower()))
@@ -54,14 +54,17 @@ class SlackBot(threading.Thread):
     else:
       self.info('Starting.')
 
-    self.actions = ActionHandler(self.name(), self.at())
+  def __repr__(self):
+    return str('%s(name=%sr,config=%r)' % (type(self).__name__, self.name(), self._config))
 
   def run(self):
     # Connect.
     if self._client.rtm_connect():
-      connect_msg = 'Connected as ' + repr(self.name())
+      connect_msg = '%s: (%s) is connected.' % (self.name(), type(self).__name__)
       self.info(connect_msg)
       print(connect_msg)
+
+      self.set_actions()
 
       # Respond to stuff where appropriate.
       while self._run == True:
@@ -74,31 +77,31 @@ class SlackBot(threading.Thread):
               'channel': output['channel'],
               'user': output['user'],
             }
-            self.handle_action(execute, **args)
+            self.handle_actions(execute, **args)
         time.sleep(self._sleeptime)
 
     self.info('Exiting.')
     self._stopped = True
     sys.exit()
 
-  def handle_action(self, execute, **kwargs):
+  def handle_actions(self, execute, **kwargs):
     results = []
     for e in execute:
       self.actions.exec_action(self.post_msg, **kwargs)
 
   def parse_rtm(self, output):
     """
-    Returns a dict containing:
-      a TextBlob of the message
-      the channel in which it was sent
-      the user who sent it
+    Returns: A dict containing:
+             a TextBlob of the message
+             the channel in which it was sent
+             the user who sent it
     """
     result = {'blob': None,
               'channel': {'name': None, 'id': None},
               'user': {'name': None, 'id': None}}
     if output and len(output) > 0:
       for o in output:
-        if o and 'text' in o and o['user'] != self.id():
+        if o and 'text' in o and o['user'] != self.id() and o['user'] != 'USLACKBOT':
           result['blob']            = TextBlob(o['text'])
           result['channel']['id']   = o['channel']
           result['user']['id']      = o['user']
@@ -110,14 +113,19 @@ class SlackBot(threading.Thread):
         return result
     return result
 
-  def post_msg(self, channel, msg):
+  def post_msg(self, **kwargs):
     """ Sends a message to the given channel or user. """
+    channel = kwargs['channel']['id']
+    msg = kwargs['result']
     self._client.api_call(
       'chat.postMessage',
       channel=channel,
       text=msg,
       as_user=True)
-    self.dbg('Posted in ' + repr(self._channel_name(channel)) + ':\n ' + repr(msg))
+    self.dbg('Posted in %r:\n %r' % (self._channel_name(channel), msg))
+
+  def set_actions(self):
+    self.actions = ActionHandler(self.name(), self.at())
 
   def at(self, id_str=None):
     if id_str:
