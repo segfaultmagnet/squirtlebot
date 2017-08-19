@@ -36,11 +36,12 @@ from slackbot import SlackBot, SquirtleBot
 
 def _assert_config(config):
   for b in config:
-    assert config[b]['API_token'] != 'changeme', "Change \'API_token\' from default: %r" % config[b]['API_token']
+    assert config[b]['API Token'] != 'changeme', "Change \'API Token\' from default: %r" % config[b]['API Tken']
     assert config[b]['League ID'] != 12345, "Change \'League ID\' from default: %r" % config[b]['League ID']
-    assert config[b]['League year'] != 12345, "Change \'League year\' from default: %r" % config[b]['League year']
+    assert config[b]['League Year'] != 12345, "Change \'League Year\' from default: %r" % config[b]['League Year']
 
 def _main(bots, logger):
+  config_all = {}
   for b in bots:
     b.start()
 
@@ -58,8 +59,11 @@ def _main(bots, logger):
     print('Stopping all bots.')
   finally:
     for b in bots:
+      config_all.update(b.config_file())
       b.stop()
     print('Done.')
+
+  return config_all
 
 def __init__(args):
   root = os.path.abspath(os.path.dirname(__file__))
@@ -97,7 +101,9 @@ def __init__(args):
     botconfig['Root']    = root
     bots.append(globals()[botconfig['Type']](name, botconfig, debug=DEBUG))
 
-  _main(bots, logger)
+  config_all = _main(bots, logger)
+  with open(os.path.relpath(args['<config>'], start=root), 'w') as file:
+    json.dump(config_all, file, sort_keys=True, indent=2)
 
 if __name__ == '__main__':
   __init__(docopt(__doc__, help=True, version=__version__))

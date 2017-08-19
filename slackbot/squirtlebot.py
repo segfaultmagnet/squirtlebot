@@ -28,9 +28,9 @@ class SquirtleBot(SlackBot):
 
   def run(self):
     self.league = LeagueHandler(lid=self._config['League ID'],
-                                year=self._config['League year'],
-                                espn_s2=self._config['League_auth_cookies']['espn_s2'],
-                                swid=self._config['League_auth_cookies']['SWID'])
+                                year=self._config['League Year'],
+                                espn_s2=self._config['League Auth Cookies']['espn_s2'],
+                                swid=self._config['League Auth Cookies']['SWID'])
     settings = self.league.get().settings
     if settings:
       league_msg = '%s: League: %r (%s)' % (self.name(), settings.name, settings.year)
@@ -52,9 +52,21 @@ class SquirtleBot(SlackBot):
 
       if e == 'tell':
         kwargs['teams'] = self.league.get().teams
-        kwargs['teams_prev'] = self.league.get(self._config['League year']-1).teams
+        kwargs['teams_prev'] = self.league.get(self._config['League Year']-1).teams
 
       self.actions.exec_action(self.post_msg, **kwargs)
 
   def set_actions(self):
     self.actions = SquirtleActionHandler(self.name(), self.at(), cheeky=True)
+
+  def config_file(self, **kwargs):
+    config = {
+      'League Auth Cookies': {
+        'espn_s2': self._config['League Auth Cookies']['espn_s2'],
+        'SWID': self._config['League Auth Cookies']['SWID']
+      },
+      'League ID': self._config['League ID'],
+      'League Year': self._config['League Year']
+    }
+    config.update(kwargs)
+    return super(SquirtleBot, self).config_file(**config)

@@ -39,7 +39,7 @@ class SlackBot(threading.Thread):
     self.err  = self._config['Logger'].error
     self.crit = self._config['Logger'].critical
 
-    self._client = SlackClient(config['API_token'])
+    self._client = SlackClient(config['API Token'])
 
     self._run       = True
     self._sleeptime = 1
@@ -142,6 +142,19 @@ class SlackBot(threading.Thread):
 
   def channels(self):
     return self._config['Channels']
+
+  def config_file(self, **kwargs):
+    config = {
+      self.name(): {
+        'Type': type(self).__name__,
+        'API Token': self._config['API Token'],
+        'Channels': {}
+      }
+    }
+    for c in self.channels():
+      config[self.name()]['Channels'][c] = self.channels()[c]
+    config[self.name()].update(kwargs)
+    return config
 
   def name(self, name=None):
     if name:

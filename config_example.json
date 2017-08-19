@@ -2,17 +2,19 @@
   "SquirtleBot":
   {
     "Type": "SquirtleBot",
-    "API_token": "changeme",
+    "API Token": "changeme",
     "Channels":
     {
+      "bot_test": null,
+      "fantasyfootball": null,
       "general": null
     },
-    "League_auth_cookies":
+    "League Auth Cookies":
     {
       "espn_s2": "changeme",
       "SWID": "changeme"
     },
     "League ID": 12345,
-    "League year": 12345
+    "League Year": 12345
   }
 }
