@@ -11,3 +11,4 @@ __status__     = 'Development'
 from .structs import Action, Keyword
 from .actionhandler import ActionHandler
 from .squirtleactionhandler import SquirtleActionHandler
+from ..slackbotlib import SlackBotLib

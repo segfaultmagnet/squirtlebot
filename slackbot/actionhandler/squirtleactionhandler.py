@@ -58,6 +58,7 @@ class SquirtleActionHandler(ActionHandler):
   def actions_fantasy(self):
     return [
       Action(name='matchup', function=self._action_matchup),
+      Action(name='matchups_all', function=self._action_matchups_all),
       Action(name='tell', function=self._action_tell),
       # 'at_bot':  self._action_mention
     ]
@@ -74,8 +75,9 @@ class SquirtleActionHandler(ActionHandler):
 
   def keywords_fantasy(self):
     return [
-      Keyword(name='tell', regex=re.compile('%s (?:tell me|what|how) about ([a-zA-Z]+)(?:\'|\'s) team' % self.at, flags=re.I), re_match=True),
-      Keyword(name='matchup', regex=re.compile('%s show ([a-zA-Z]+)(?:\'|\'s)* matchup' % self.at), re_match=True),
+      Keyword(name='matchup', regex=re.compile('%s show (?!all)([a-zA-Z]+)(?:\'|\'s){0,1} matchup' % self.at), re_match=True),
+      Keyword(name='matchups_all', regex=re.compile('%s show all matchups' % self.at), re_match=True),
+      Keyword(name='tell', regex=re.compile('%s (?:tell me|what|how) about ([a-zA-Z]+)(?:\'|\'s){0,1} team' % self.at, flags=re.I), re_match=True),
       # 'at_bot':  [(re.compile(at, flags=re.I), True)]
     ]
 
@@ -109,7 +111,7 @@ class SquirtleActionHandler(ActionHandler):
 
   def _action_matchup(self, **kwargs):
     """
-    Returns the current week's matchup and scores for a given player.
+    Returns the matchup and scores for a given player during a given week.
 
     Args in kwargs:
       players:  A list of Player objects. This will be used to match a Slack user
@@ -138,7 +140,7 @@ class SquirtleActionHandler(ActionHandler):
     msg = []
     queried_player = re.findall(kwargs.get('regex'), kwargs.get('text'))[0]
     teams = kwargs.get('teams')
-    week = kwargs.get('week')
+    week  = kwargs.get('week')
 
     if queried_player.lower() == 'my':
       queried_player = kwargs['user']['first_name']
@@ -153,8 +155,44 @@ class SquirtleActionHandler(ActionHandler):
         team = t
     opponent = team.schedule[week-1]
 
-    msg.append('Week %s: vs. %s (%s)\n' % (week, opponent.owner, opponent.team_name))
-    msg.append('%s: %s\n%s: %s' % (team.team_name, team.scores[week-1], opponent.team_name, opponent.scores[week-1]))
+    line1, line2 = SlackBotLib.format_matchup(
+      name1=team.team_name,
+      name2=opponent.team_name,
+      score1=team.scores[week-1],
+      score2=opponent.scores[week-1])
+    msg.append('Week %s: vs. %s (%s):\n' % (week, opponent.owner, opponent.team_name))
+    msg.append('%s vs. %s:\n' % (team.owner, opponent.owner))
+    msg.append('```%s\n%s```' % (line1, line2))
+    return ''.join(msg)
+
+  def _action_matchups_all(self, **kwargs):
+    """
+    Returns all matchups in the given week.
+
+    Args in kwargs:
+      teams:  A list of Team objects, one for each team in the league.
+              See: espnff.Team
+
+      week:   The week number of the matchup to be fetched. Note: this does NOT
+              start at zero. Range: in all likelihood, 1 to 16.
+    """
+    msg = []
+    teams = kwargs.get('teams')
+    week  = kwargs.get('week')
+
+    msg.append('Week %s matchups:\n' % week)
+    for t in teams:
+      opponent = t.schedule[week-1]
+      line1, line2 = SlackBotLib.format_matchup(
+        name1=t.team_name,
+        name2=opponent.team_name,
+        score1=t.scores[week-1],
+        score2=opponent.scores[week-1]
+        )
+      msg.append('%s vs. %s:\n' % (t.owner, opponent.owner))
+      msg.append('```%s\n%s```\n' % (line1, line2))
+      teams.remove(opponent)
+
     return ''.join(msg)
 
   """ Needs to be updated.
@@ -189,6 +227,13 @@ class SquirtleActionHandler(ActionHandler):
                   See: espnff.Team
 
       text:   The text content of the message in which the request was made.
+
+      user:   The user whose message triggered this method. This is not necessarily
+              the person whose matchup should be fetched. Their first name must
+              be supplied as well, as this will be used to match a Slack user to
+              a member of the fantasy league. If your league has people with the
+              same first name, you may wish to change this behavior. This will
+              likely be made more robust in the future.
     """
     msg = []
     team_owner = re.findall(kwargs.get('regex'), kwargs.get('text'))[0]
@@ -196,6 +241,11 @@ class SquirtleActionHandler(ActionHandler):
     teams_prev = kwargs.get('teams_prev')
     team_name       = None
     team_place_prev = None
+    is_user = False
+
+    if team_owner.lower() == 'my':
+      team_owner = kwargs['user']['first_name']
+      is_user = True
 
     for t in teams:
       if t.owner.split()[0].lower() == team_owner.lower():
@@ -205,10 +255,16 @@ class SquirtleActionHandler(ActionHandler):
         team_place_prev = t.overall_standing
 
     if team_name:
-      msg.append(team_name + ' are terrible and %s is totally clueless.' % str.capitalize(team_owner))
+      msg.append(team_name + ' are terrible and %s totally clueless.' % ('you are' if is_user else '%s is' % str.capitalize(team_owner)))
       if team_place_prev:
-        msg.append(' He somehow came in %s last year, but he\'ll manage to do worse this year.' % self._inflect.ordinal(team_place_prev))
+        msg.append(' %s somehow came in %s last year, but %s manage to do worse this year.' % (('You' if is_user else 'He'), self._inflect.ordinal(team_place_prev), ('you\'ll' if is_user else 'he\'ll')))
     else:
       msg.append('I don\'t know who %s is, but I bet he sucks at fantasy.' % str.capitalize(team_owner))
 
     return ''.join(msg)
+
+  def _action_standings(self, **kwargs):
+    """
+    Returns the curren overall standings of the league.
+    """
+    return 'To be implemented.'

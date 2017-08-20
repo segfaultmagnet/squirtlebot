@@ -20,6 +20,7 @@ import re
 import inflect
 
 from .structs import Action, Keyword
+from ..slackbotlib import SlackBotLib
 
 class ActionHandler(object):
   def __init__(self, name, at):

@@ -36,6 +36,30 @@ class SlackBotLib:
 
     return result
 
+  def format_matchup(name1, name2, score1, score2):
+    """ Returns two nicely-formatted lines string of a matchup's scores. """
+    line1_left = '%s ' % name1
+    line2_left = '%s ' % name2
+    line1_right = '%s' % score1
+    line2_right = '%s' % score2
+
+    while(len(line1_left) != len(line2_left)):
+      if len(line1_left) < len(line2_left):
+        line1_left = '%s ' % line1_left
+      else:
+        line2_left = '%s ' % line2_left
+
+    while(len(line1_right) != len(line2_right)):
+      if len(line1_right) < len(line2_right):
+        line1_right = ' %s' % line1_right
+      else:
+        line2_right = ' %s' % line2_right
+
+    line1 = '%s%s' % (line1_left, line1_right)
+    line2 = '%s%s' % (line2_left, line2_right)
+
+    return line1, line2
+
   def channel_id(client, channels, name):
     """
     Returns the ID associated with the given channel name.

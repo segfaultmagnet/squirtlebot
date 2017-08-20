@@ -67,6 +67,10 @@ class SquirtleBot(SlackBot):
         kwargs['players'] = self.league.get().players
         kwargs['week'] = self.league.current_week()
 
+      if e == 'matchups_all':
+        kwargs['teams'] = self.league.get().teams
+        kwargs['week'] = self.league.current_week()
+
       if e == 'tell':
         kwargs['teams'] = self.league.get().teams
         kwargs['teams_prev'] = self.league.get(self._config['League Year']-1).teams

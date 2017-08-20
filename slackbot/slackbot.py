@@ -84,7 +84,7 @@ class SlackBot(threading.Thread):
 
     # Connect.
     if self._client.rtm_connect():
-      connect_msg = '%s: (%s) is connected.' % (self.name(), type(self).__name__)
+      connect_msg = '%s (%s): is connected.' % (self.name(), type(self).__name__)
       self.info(connect_msg)
       print(connect_msg)
 
@@ -133,7 +133,7 @@ class SlackBot(threading.Thread):
               'user': {'name': None, 'id': None}}
     if output and len(output) > 0:
       for o in output:
-        if o and 'text' in o and o['user'] != self.id() and o['user'] != 'USLACKBOT':
+        if o and 'text' in o and not o['user'] == self.id() and not o['user'] == 'USLACKBOT':
           result['blob']            = TextBlob(o['text'])
           result['channel']['id']   = o['channel']
           result['channel']['name'] = self._channel_name(result['channel']['id'])
