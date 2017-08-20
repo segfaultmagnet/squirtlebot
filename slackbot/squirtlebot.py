@@ -1,3 +1,8 @@
+"""
+Subclass of SlackBot. Accesses a given ESPN fantasy football league to provide
+snark and maybe, possibly some useful functions.
+"""
+
 __author__     = 'Matthew Sheridan'
 __copyright__  = 'Copyright 2017, Matthew Sheridan'
 __license__    = 'Beer-Ware License Rev. 42'
@@ -27,6 +32,12 @@ class SquirtleBot(SlackBot):
       self.info('Starting.')
 
   def run(self):
+    """
+    Overrides SlackBot.run()
+
+    Retrieves the fantasy league's current year, then executes the parent class's
+    run() method.
+    """
     self.league = LeagueHandler(lid=self._config['League ID'],
                                 year=self._config['League Year'],
                                 espn_s2=self._config['League Auth Cookies']['espn_s2'],
@@ -40,6 +51,12 @@ class SquirtleBot(SlackBot):
     super(SquirtleBot, self).run()
 
   def handle_actions(self, execute, **kwargs):
+    """
+    Overrides SlackBot.handle_actions()
+
+    Passes additional information on to the SquirtleActionHandler that is needed
+    for its Actions.
+    """
     results = []
     for e in execute:
       kwargs['action'] = e
@@ -57,9 +74,20 @@ class SquirtleBot(SlackBot):
       self.actions.exec_action(self.post_msg, **kwargs)
 
   def set_actions(self):
+    """
+    Overrides SlackBot.set_actions()
+
+    Specifies which type of ActionHandler should be used by this bot.
+    """
     self.actions = SquirtleActionHandler(self.name(), self.at(), cheeky=True)
 
   def config_file(self, **kwargs):
+    """
+    Overrides SlackBot.config_file()
+
+    Returns those configuration values that should be written out to file, passing
+    them to the parent class's config_file() method.
+    """
     config = {
       'League Auth Cookies': {
         'espn_s2': self._config['League Auth Cookies']['espn_s2'],

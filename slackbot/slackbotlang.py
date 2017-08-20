@@ -1,3 +1,7 @@
+"""
+Provides some natural language processing functionality. Not currently used.
+"""
+
 __author__     = 'Matthew Sheridan'
 __copyright__  = 'Copyright 2017, Matthew Sheridan'
 __license__    = 'Beer-Ware License Rev. 42'

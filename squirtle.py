@@ -35,12 +35,39 @@ from docopt import docopt
 from slackbot import SlackBot, SquirtleBot
 
 def _assert_config(config):
+  """
+  Ensure that the user has added the necessary API token and league information
+  to the supplied configuration file.
+  """
   for b in config:
     assert config[b]['API Token'] != 'changeme', "Change \'API Token\' from default: %r" % config[b]['API Tken']
     assert config[b]['League ID'] != 12345, "Change \'League ID\' from default: %r" % config[b]['League ID']
     assert config[b]['League Year'] != 12345, "Change \'League Year\' from default: %r" % config[b]['League Year']
 
+def _get_logger(level):
+  """
+  Returns a new instance of a logger with the given logging level
+  (e.g. DEBUG, INFO, WARN, ...).
+  """
+  logger = logging.getLogger(str(__name__))
+  logger.setLevel(level)
+  handler = logging.FileHandler(
+    os.path.relpath(
+      'logs/' + os.path.basename(__file__).split('.')[0] + '.log'))
+  handler.setFormatter(
+    logging.Formatter(
+      fmt='%(asctime)s %(module)s: %(funcName)s(%(lineno)s) %(levelname)s: %(message)s',
+      datefmt='%Y/%m/%d %H:%M:%S'))
+  logger.addHandler(handler)
+
+  return logger
+
 def _main(bots, logger):
+  """
+  Main loop. Starts all bots and waits for them to either exit on their own or
+  stops them when the program is interrupted. Returns those bots' configuration
+  values so that they can be written to file.
+  """
   config_all = {}
   for b in bots:
     b.start()
@@ -66,32 +93,31 @@ def _main(bots, logger):
   return config_all
 
 def __init__(args):
+  """
+  Loads a user-specified configuration file containing information on the bot(s)
+  to be run. Creates instances of those bots (as well as a logger) and passes
+  them to _main() to be started.
+  """
+
+  # Parse arguments.
   root = os.path.abspath(os.path.dirname(__file__))
   assert os.path.isfile(args['<config>']), "Configuration file %r not found." % repr(args['<config>'])
   DEBUG = args['--debug']
 
+  # Load configuration file.
   config = None
   with open(os.path.relpath(args['<config>'], start=root), 'r') as file:
     config = json.load(file)
   _assert_config(config)
 
+  # Create new logger.
   level = logging.INFO
   if DEBUG:
     level = logging.DEBUG
-  
-  logger = logging.getLogger(str(__name__))
-  logger.setLevel(level)
-  handler = logging.FileHandler(
-    os.path.relpath(
-      'logs/' + os.path.basename(__file__).split('.')[0] + '.log'))
-  handler.setFormatter(
-    logging.Formatter(
-      fmt='%(asctime)s %(module)s: %(funcName)s(%(lineno)s) %(levelname)s: %(message)s',
-      datefmt='%Y/%m/%d %H:%M:%S'))
-  logger.addHandler(handler)
+  logger = _get_logger(level)
 
-  bots  = []
-
+  # Create new bots.
+  bots = []
   for b in config:
     name = b
     botconfig = config[b]
@@ -101,6 +127,7 @@ def __init__(args):
     botconfig['Root']    = root
     bots.append(globals()[botconfig['Type']](name, botconfig, debug=DEBUG))
 
+  # Send bots to _main() to be started. Write their configurations to file upon exit.
   config_all = _main(bots, logger)
   with open(os.path.relpath(args['<config>'], start=root), 'w') as file:
     json.dump(config_all, file, sort_keys=True, indent=2)

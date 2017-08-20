@@ -23,6 +23,16 @@ from .structs import Action, Keyword
 
 class ActionHandler(object):
   def __init__(self, name, at):
+    """
+    Args:
+      name:   A string containing this bot's name. May be used by the bot to
+              identify text relevant to itself.
+
+      at:     String representation of a Slack bot's @BotName identifier. This
+              is not a traditional name like 'SlackBot', but rather is of the
+              format '<@ABCD123>' or similar, containing an assortment of
+              alphanumeric characters.
+    """
     self.at = at
     self.name = name
     self._actions  = [
@@ -36,12 +46,17 @@ class ActionHandler(object):
 
   def exec_action(self, **kwargs):
     """
-    Args:
-      action: Action matching one of the Actions listed in self._actions; this
-              is the Action to be executed. Other args needed for that Action's
-              args are passed through.
+    Executes the function specified by one or more Actions given as an argument,
+    but does not execute any further actions, only returning what those functions
+    themselves return.
 
-    Returns:  Executes the specified method(s) and returns their result, if any.
+    Args:
+      action: Action(s) matching one of the Actions listed in self._actions;
+              this is the Action to be executed. Other args needed for that
+              Action's own arguments are passed through.
+
+    Returns:  Executes the methods specified by those Actions and returns their
+              result, if any.
     """
     action_name = kwargs.get('action')
     execute = [a for a in self._actions if a.name == action_name]
@@ -51,6 +66,10 @@ class ActionHandler(object):
     return result
 
   def parse_keywords(self, **kwargs):
+    """
+    Compares regular expressions in Keywords to the given text and returns the
+    name of that Keyword if a match is found.
+    """
     text    = kwargs.get('text')
     execute = {}
 
@@ -64,6 +83,7 @@ class ActionHandler(object):
     return execute
 
   def update(self, actions=None, keywords=None):
+    """ Merges new lists of Actions and Keywords with the existing lists. """
     for a in actions:
       if not a in self._actions:
         self._actions.append(a)
@@ -72,8 +92,15 @@ class ActionHandler(object):
       if not k in self._keywords:
         self._keywords.append(k)
 
+  """
+  The following are methods which should be executed when an Action is called
+  (see the Action instances above in self._actions). If the SlackBot should post
+  a message to the channel that prompted the Action, that message should be
+  returned by these methods.
+  """
+
   def _action_about_author(self, **kwargs):
-    return(__author__ + ' is the author of this bot. Please visit %s!' % repr(__website__))
+    return(__author__ + ' is the author of this bot. Please visit %r!' % __website__)
 
   def _action_about_bot(self, **kwargs):
-    return('%s is a chatbot created by %s. Please visit %s!' % (self.name, __author__, __website__))
+    return('%s is a chatbot created by %s. Please visit %r!' % (self.name, __author__, __website__))

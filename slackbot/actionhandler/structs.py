@@ -1,3 +1,8 @@
+"""
+Provides simple classes to abstract regular expressions (Keywords) and the
+functions (Actions) that should be called when found in parsed text.
+"""
+
 __author__     = 'Matthew Sheridan'
 __copyright__  = 'Copyright 2017, Matthew Sheridan'
 __license__    = 'Beer-Ware License Rev. 42'
@@ -8,22 +13,22 @@ __credits__    = ['Matthew Sheridan']
 __version__    = '0.1'
 __status__     = 'Development'
 
-"""
-Provides simple classes to abstract regular expressions (Keywords) and the
-functions (Actions) that should be called when found in parsed text.
-"""
-
 import re
 
 class Action(object):
   """
-  Args:
-    name:   a string that will be used to identify this Action when one or more
-            Keywords are matched
-
-    func:   a function which should be called when this Action is matched
+  Used to specify a SlackBot method or other function which should be called
+  upon some condition as specified by one or more Keywords.
+  i.e. This is a container for a function and a keyword used to trigger it.
   """
   def __init__(self, name, function):
+    """
+    Args:
+      name:   a string that will be used to identify this Action when one or more
+              Keywords are matched
+
+      func:   a function which should be called when this Action is matched
+    """
     self.name = name.lower()
     self.function = function
 
@@ -40,23 +45,30 @@ class Action(object):
 
 class Keyword(object):
   """
-  Args:
-    name:     a string that will be used to identify this Keyword and match it
-              to Action(s) which should be called
-
-    regex:    a compiled regular expression
-
-    re_match: boolean; True if the regex should only be used to match from the
-              beginning (left) of a string, as in re.match()
+  Specifies a regular expression which will be used in parsing text from Slack
+  channels, as well as a 'name' keyword used to connect that regex to one or
+  more Actions. If the regex matches text, Actions containing the same keyword
+  will have their specified 'function' called.
   """
   def __init__(self, name, regex, re_match=False):
+    """
+    Args:
+      name:     A string that will be used to identify this Keyword and match it
+                to Action(s) which should be called.
+
+      regex:    A compiled regular expression.
+
+      re_match: boolean; True if the regex should only be used to match from the
+                beginning (left) of a string, as in re.match();
+                False, any match at any place in that string, as in re.search().
+    """
     self.name = name.lower()
     self.regex = regex
     self.re_match = re_match
 
   def __eq__(self, other):
-    return self.name == other.name \
-           and self.regex == other.regex           \
+    return self.name == other.name             \
+           and self.regex == other.regex       \
            and self.re_match == other.re_match
 
   def __repr__(self):

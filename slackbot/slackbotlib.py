@@ -1,3 +1,7 @@
+"""
+Provides additional functions for use by SlackBots.
+"""
+
 __author__     = 'Matthew Sheridan'
 __copyright__  = 'Copyright 2017, Matthew Sheridan'
 __license__    = 'Beer-Ware License Rev. 42'
@@ -10,6 +14,7 @@ __status__     = 'Development'
 
 class SlackBotLib:
   def at_user(id_str):
+    """ Returns the @Name representation of a bot or user. """
     return '<@' + id_str + '>.'
 
   def init_channels(client, channels):
@@ -98,7 +103,7 @@ class SlackBotLib:
     return name
 
   def user_id(client, name):
-    """ Returns the ID associated with the given uesr name. """
+    """ Returns the ID associated with the given user name. """
     id_str = None
 
     api_call = client.api_call('users.list')

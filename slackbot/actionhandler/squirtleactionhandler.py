@@ -1,3 +1,10 @@
+"""
+Defines the behavior of the SquirtleBot. Subclass of ActionHandler. This subclass
+does not override the default Actions and Keywords of its parent class, but does
+override exec_action method to allow another function to be called after the
+execution of each Action's function.
+"""
+
 __author__     = 'Matthew Sheridan'
 __copyright__  = 'Copyright 2017, Matthew Sheridan'
 __license__    = 'Beer-Ware License Rev. 42'
@@ -14,18 +21,31 @@ from .actionhandler import *
 
 class SquirtleActionHandler(ActionHandler):
   def __init__(self, name, at, cheeky=True, **kwargs):
+    """
+    Args:
+      Same as those required by parent class ActionHandler with the addition of
+      a bool 'cheeky' which controls whether or not this bot should enable its
+      less useful but more fun behaviors. Optional; not for Patriots fans.
+    """
     super(SquirtleActionHandler, self).__init__(name=name, at=at)
     self._inflect = inflect.engine()
     self.update(actions=self.actions_fantasy(), keywords=self.keywords_fantasy())
     if cheeky:
       self.update(actions=self.actions_cheeky(), keywords=self.keywords_cheeky())
 
-  def exec_action(self, function, **kwargs):
+  def exec_action(self, function=None, **kwargs):
     results = super(SquirtleActionHandler, self).exec_action(**kwargs)
     for r in results:
       kwargs['result'] = r
-      function(**kwargs)
+      if function:
+        function(**kwargs)
     return results
+
+  """
+  The following methods simply return lists which will be merged with
+  self._actions and self._keywords. They are separated here as their own methods
+  for ease of use and readability.
+  """
 
   def actions_cheeky(self):
     return [
@@ -59,10 +79,21 @@ class SquirtleActionHandler(ActionHandler):
       # 'at_bot':  [(re.compile(at, flags=re.I), True)]
     ]
 
+  """
+  The following are methods which should be executed when an Action is called
+  (see the Action instances above in self._actions). If the SlackBot should post
+  a message to the channel that prompted the Action, that message should be
+  returned by these methods.
+  """
+
   def _action_brady(self, **kwargs):
     return('Tom Brady has deflated balls.')
 
   def _action_geno(self, **kwargs):
+    """
+    Returns a string similar to 'GENO' with a random number of 'E', 'N', and
+    'O' characters.
+    """
     geno = []
     [geno.append('g') for _ in range(randrange(1,2))]
     [geno.append('e') for _ in range(randrange(2,4))]
@@ -77,6 +108,33 @@ class SquirtleActionHandler(ActionHandler):
     return('Choo choo!')
 
   def _action_matchup(self, **kwargs):
+    """
+    Returns the current week's matchup and scores for a given player.
+
+    Args in kwargs:
+      players:  A list of Player objects. This will be used to match a Slack user
+                to a member of the fantasy league, and that member to their team.
+                See: espnff.Player
+
+      regex:  The regular expression which matched the Action containing this
+              method. Necessary to retrieve the name of the person whose matchup
+              should be returned.
+
+      teams:  A list of Team objects, one for each team in the league.
+              See: espnff.Team
+
+      text:   The text content of the message in which the request was made.
+
+      user:   The user whose message triggered this method. This is not necessarily
+              the person whose matchup should be fetched. Their first name must
+              be supplied as well, as this will be used to match a Slack user to
+              a member of the fantasy league. If your league has people with the
+              same first name, you may wish to change this behavior. This will
+              likely be made more robust in the future.
+
+      week:   The week number of the matchup to be fetched. Note: this does NOT
+              start at zero. Range: in all likelihood, 1 to 16.
+    """
     msg = []
     queried_player = re.findall(kwargs.get('regex'), kwargs.get('text'))[0]
     teams = kwargs.get('teams')
@@ -112,9 +170,26 @@ class SquirtleActionHandler(ActionHandler):
     return msg
   """
 
-  # This is the next big one:
   # Add parsing for 'my' or move it up to SlackBot
   def _action_tell(self, **kwargs):
+    """
+    Returns a candid and unflattering opinion of a named player's fantasy team.
+
+    Args in kwargs:
+      regex:  The regular expression which matched the Action containing this
+              method. Necessary to retrieve the name of the person who should be
+              insulted.
+
+      teams:  A list of Team objects, one for each team in the league.
+              These are the teams for the CURRENT year's league.
+              See: espnff.Team
+
+      teams_prev: A list of Team objects, one for each team in the league.
+                  These are the teams for the PREVIOUS year's league.
+                  See: espnff.Team
+
+      text:   The text content of the message in which the request was made.
+    """
     msg = []
     team_owner = re.findall(kwargs.get('regex'), kwargs.get('text'))[0]
     teams      = kwargs.get('teams')
