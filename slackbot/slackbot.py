@@ -56,7 +56,7 @@ class SlackBot(threading.Thread):
     self._client = SlackClient(config['API Token'])
 
     self._run       = True
-    self._sleeptime = 1
+    self._sleeptime = 3
     self._stopped   = False
 
     self.name(name)
