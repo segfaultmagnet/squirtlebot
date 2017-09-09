@@ -150,12 +150,16 @@ class SlackBot(threading.Thread):
     channel = kwargs.get('channel')['id']
     msg = kwargs.get('result')
     if channel and msg:
-      self._client.api_call(
+      result = self._client.api_call(
         'chat.postMessage',
         channel=channel,
         text=msg,
         as_user=True)
-      self.dbg('Posted in %r:\n %r' % (self._channel_name(channel), msg))
+      if result['ok']:
+        self.dbg('Posted in %r:\n %r' % (self._channel_name(channel), msg))
+      else:
+        self.dbg('chat.postMessage returned %r' % result['ok'])
+        self.deb(result)
     else:
       self.dbg('Executed action, but no message posted.')
 

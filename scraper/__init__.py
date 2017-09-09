@@ -8,4 +8,6 @@ __credits__    = ['Matthew Sheridan']
 __version__    = '0.1'
 __status__     = 'Development'
 
-from .scraper import Scraper
+from scraper import Scraper
+from article import article
+from articlescraper import ArticleScraper

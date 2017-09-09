@@ -43,8 +43,8 @@ from docopt import docopt
 from lxml import html
 from textblob import TextBlob
 
-from .article import Article
-from .articlescraper import ArticleScraper
+from article import Article
+from articlescraper import ArticleScraper
 
 class Scraper(threading.Thread):
   def __init__(self, articles_path, look_back_pages=2, page_increment=20):
@@ -102,6 +102,7 @@ class Scraper(threading.Thread):
       print('Waiting for ArticleScraper...')
       time.sleep(1)
 
+    self._print_articles(self._articles)
     self._stopped = True
 
   def stop(self):
@@ -159,6 +160,11 @@ class Scraper(threading.Thread):
     urls = tree.xpath('//figure[@class="asset marquee-asset js_marquee-assetfigure "]/a[@href]/attribute::href')
     
     return urls
+
+  def _print_articles(self, articles):
+    for a in articles:
+      with open('raw/%s.txt' % articles[a].title(), 'w') as file:
+        file.write(articles[a].content())
 
 def __init__(args):
   root    = os.path.abspath(os.path.dirname(__file__))

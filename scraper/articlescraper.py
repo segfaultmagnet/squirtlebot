@@ -22,7 +22,7 @@ from collections import deque
 from lxml import html
 from textblob import TextBlob
 
-from .article import Article
+from article import Article
 
 class ArticleScraper(threading.Thread):
   def __init__(self):

@@ -1,6 +1,6 @@
 dat/*
-/espnff
 logs/*
+raw*
 media/
 __pycache__/
 config.json
