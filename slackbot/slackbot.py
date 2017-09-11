@@ -39,6 +39,9 @@ from .actionhandler import ActionHandler
 from .slackbotlib import SlackBotLib
 
 class SlackBot(threading.Thread):
+  global PING_TIMER_STEP
+  PING_TIMER_STEP = 5
+
   def __init__(self, name, config, debug=False):
     super(SlackBot, self).__init__()
     self._config = config
@@ -55,8 +58,9 @@ class SlackBot(threading.Thread):
 
     self._client = SlackClient(config['API Token'])
 
+    self._pingtimer = 0
     self._run       = True
-    self._sleeptime = 3
+    self._sleeptime = 1
     self._stopped   = False
 
     self.name(name)
@@ -92,16 +96,26 @@ class SlackBot(threading.Thread):
 
       # Respond to stuff where appropriate.
       while self._run == True:
+        # Ping server.
+        t = time.time()
+        if t > self._pingtimer:
+          self._pingtimer = t + PING_TIMER_STEP
+          self._client.server.ping()
+
         output = self.parse_rtm(self._client.rtm_read())
-        if output['blob'] and output['channel']['name'] in self.channels().keys():
-          activities = self.actions.parse_keywords(text=str(output['blob']))
-          if activities:
-            args = {
-              'text': str(output['blob']),
-              'channel': output['channel'],
-              'user': output['user'],
-            }
-            self.handle_actions(activities, **args)
+        for o in output:
+          if o['blob'] and o['channel']['name'] in self.channels().keys():
+            self.dbg('Activity in a channel that I\'m watching!')
+            activities = self.actions.parse_keywords(text=str(o['blob']))
+            if activities:
+              self.dbg('I\'m going to take some actions now.')
+              args = {
+                'text': str(o['blob']),
+                'channel': o['channel'],
+                'user': o['user'],
+              }
+              self.handle_actions(activities, **args)
+
         time.sleep(self._sleeptime)
 
     self.info('Exiting.')
@@ -125,30 +139,36 @@ class SlackBot(threading.Thread):
     purpose is to simply screen out all activity that isn't just a normal
     text message posted to a channel.
 
-    Returns:  A dict containing a TextBlob of the message, the channel in which
-              it was sent, and the user who sent it.
+    Returns:  A list of dicts, each containing a TextBlob of the message, the
+              channel in which it was sent, and the user who sent it.
     """
-    result = {'blob': None,
-              'channel': {'name': None, 'id': None},
-              'user': {'name': None, 'id': None}}
+
+    results =[]
+
     if output and len(output) > 0:
       for o in output:
-        if o and 'text' in o and not o['user'] == self.id() and not o['user'] == 'USLACKBOT':
-          result['blob']            = TextBlob(o['text'])
-          result['channel']['id']   = o['channel']
-          result['channel']['name'] = self._channel_name(result['channel']['id'])
-          result['user']['id']      = o['user']
-          user = self._user_name(result['user']['id'])
-          result['user']['name']       = user['name']
-          result['user']['first_name'] = user['first_name']
-          # result['user']['last_name']  = user['last_name']
-        return result
-    return result
+        if o and 'text' in o and 'user' in o and not o['user'] == self.id() and not o['user'] == 'USLACKBOT':
+          new_result = {'blob': None,
+                        'channel': {'name': None, 'id': None},
+                        'user': {'name': None, 'id': None}}
+
+          new_result['blob']            = TextBlob(o['text'])
+          new_result['channel']['id']   = o.get('channel')
+          new_result['channel']['name'] = self._channel_name(new_result['channel']['id'])
+          new_result['user']['id']      = o.get('user')
+          user = self._user_name(new_result['user']['id'])
+          new_result['user']['name']       = user['name']
+          new_result['user']['first_name'] = user['first_name']
+          new_result['user']['last_name']  = user.get('last_name')
+          results.append(new_result)
+
+    return results
 
   def post_msg(self, **kwargs):
     """ Sends a message to the given channel or user. """
     channel = kwargs.get('channel')['id']
     msg = kwargs.get('result')
+
     if channel and msg:
       result = self._client.api_call(
         'chat.postMessage',
@@ -161,7 +181,7 @@ class SlackBot(threading.Thread):
         self.dbg('chat.postMessage returned %r' % result['ok'])
         self.deb(result)
     else:
-      self.dbg('Executed action, but no message posted.')
+      self.info('Executed action, but no message posted.')
 
   def set_actions(self):
     """ Specifies which type of ActionHandler should be used by this bot. """

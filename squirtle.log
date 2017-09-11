@@ -1,0 +1,8 @@
+2017/09/09 16:23:14 slackbot: __init__(67) INFO: Starting in DEBUG mode.
+2017/09/09 16:23:15 squirtlebot: __init__(30) INFO: Starting in DEBUG mode.
+2017/09/09 16:23:15 squirtlebot: run(48) INFO: SquirtleBot: League: 'The Squirtle Squad' (2017)
+2017/09/09 16:23:16 slackbot: run(88) INFO: SquirtleBot (SquirtleBot): is connected.
+2017/09/09 18:06:02 slackbot: post_msg(159) DEBUG: Posted in 'fantasyfootball':
+ 'Week 1: vs. Chris Cacace (michael, the football crab):\nTyler Masson vs. Chris Cacace:\n```Scrotal Edema              52.5\nmichael, the football crab    0```'
+2017/09/09 18:21:10 slackbot: post_msg(159) DEBUG: Posted in 'fantasyfootball':
+ 'Tom Brady has deflated balls.'
