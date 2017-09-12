@@ -75,9 +75,25 @@ class SquirtleActionHandler(ActionHandler):
 
   def keywords_fantasy(self):
     return [
-      Keyword(name='matchup', regex=re.compile('%s show (?!all)([a-zA-Z]+)(?:\'|\'s){0,1} matchup' % self.at), re_match=True),
-      Keyword(name='matchups_all', regex=re.compile('%s show all matchups' % self.at), re_match=True),
-      Keyword(name='tell', regex=re.compile('%s (?:tell me|what|how) about ([a-zA-Z]+)(?:\'|\'s){0,1} team' % self.at, flags=re.I), re_match=True),
+      Keyword(
+        name='matchup',
+        regex=re.compile('%s show (?!all)([a-zA-Z]+)(?:\'|\'s){0,1} matchup' % self.at),
+        name_pretty='Show this week\'s matchup',
+        examples=['%s show my matchup' % self.at, '%s show Albert\'s matchup' % self.at],
+        re_match=True
+      ),
+      Keyword(
+        name='matchups_all',
+        regex=re.compile('%s show all matchups' % self.at),
+        name_pretty='Show all matchups for this week',
+        examples=['%s show all matchups' % self.at],
+        re_match=True
+      ),
+      Keyword(
+        name='tell',
+        regex=re.compile('%s (?:tell me|what|how) about ([a-zA-Z]+)(?:\'|\'s){0,1} team' % self.at, flags=re.I),
+        re_match=True
+      ),
       # 'at_bot':  [(re.compile(at, flags=re.I), True)]
     ]
 
@@ -145,24 +161,35 @@ class SquirtleActionHandler(ActionHandler):
     if queried_player.lower() == 'my':
       queried_player = kwargs['user']['first_name']
     player = None
-    for p in kwargs.get('players'):
-      if p.first_name.lower() == queried_player.lower():
-        player = p
 
-    team = None
-    for t in teams:
-      if t.owner_id == player.player_id:
-        team = t
-    opponent = team.schedule[week-1]
+    try:
+      assert (queried_player != None and queried_player != '')
 
-    line1, line2 = SlackBotLib.format_matchup(
-      name1=team.team_name,
-      name2=opponent.team_name,
-      score1=team.scores[week-1],
-      score2=opponent.scores[week-1])
-    msg.append('Week %s: vs. %s (%s):\n' % (week, opponent.owner, opponent.team_name))
-    msg.append('%s vs. %s:\n' % (team.owner, opponent.owner))
-    msg.append('```%s\n%s```' % (line1, line2))
+      for p in kwargs.get('players'):
+        if p.first_name.lower() == queried_player.lower():
+          player = p
+
+      assert player != None
+
+      team = None
+      for t in teams:
+        if t.owner_id == player.player_id:
+          team = t
+      opponent = team.schedule[week-1]
+
+      line1, line2 = SlackBotLib.format_matchup(
+        name1=team.team_name,
+        name2=opponent.team_name,
+        score1=team.scores[week-1],
+        score2=opponent.scores[week-1])
+      msg.append('Week %s: vs. %s (%s):\n' % (week, opponent.owner, opponent.team_name))
+      msg.append('%s vs. %s:\n' % (team.owner, opponent.owner))
+      msg.append('```%s\n%s```' % (line1, line2))
+
+    except AssertionError:
+      msg.append('I\'m sorry, but I can\'t figure out who that is! Try this: make sure that your name in Slack matches your name on ESPN.com!\n')
+      msg.append('In the meantime, you can always say ```%s show <name>\'s matchup``` where <name> is your first name as on ESPN.com!' % self.at)
+
     return ''.join(msg)
 
   def _action_matchups_all(self, **kwargs):

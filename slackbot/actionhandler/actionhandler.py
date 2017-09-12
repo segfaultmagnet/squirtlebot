@@ -38,11 +38,29 @@ class ActionHandler(object):
     self.name = name
     self._actions  = [
       Action(name='about:author', function=self._action_about_author),
-      Action(name='about:bot', function=self._action_about_bot)
+      Action(name='about:bot', function=self._action_about_bot),
+      Action(name='help', function=self._action_help)
     ]
     self._keywords = [
-      Keyword(name='about:author', regex=re.compile('%s|%s' % (__author__, __email__.split('@')[0]), flags=re.I)),
-      Keyword(name='about:bot', regex=re.compile('(?:about|who is) (?:SquirtleBot|%s)' % self.name, flags=re.I)),
+      Keyword(
+        name='about:author',
+        regex=re.compile('(?:about|who is) (?:%s|%s)' % (__author__, __email__.split('@')[0]), flags=re.I),
+        name_pretty='About the author',
+        examples=['Who is %s?' % __author__]
+      ),
+      Keyword(
+        name='about:bot', 
+        regex=re.compile('(?:about|who is) (?:SquirtleBot|%s|%s)' % (self.name, self.at), flags=re.I),
+        name_pretty='About the bot', 
+        examples=['Who is %s?' % self.at]
+      ),
+      Keyword(
+        name='help', 
+        regex=re.compile('(?:%s|%s) help' % (self.name, self.at)),
+        name_pretty='Help',
+        examples=['%s help' % self.at],
+        re_match=True
+      ),
     ]
 
   def exec_action(self, **kwargs):
@@ -84,14 +102,33 @@ class ActionHandler(object):
     return execute
 
   def update(self, actions=None, keywords=None):
-    """ Merges new lists of Actions and Keywords with the existing lists. """
-    for a in actions:
-      if not a in self._actions:
-        self._actions.append(a)
+    """
+    Merges new lists of Actions and Keywords with the existing lists. New entries
+    are placed at the front of the list (worth noting for help message purposes).
+    """
+    for a in self._actions:
+      if not a in actions:
+        actions.append(a)
+    self._actions = actions
 
-    for k in keywords:
-      if not k in self._keywords:
-        self._keywords.append(k)
+    for k in self._keywords:
+      if not k in keywords:
+        keywords.append(k)
+    self._keywords = keywords
+
+  def help_string(keyword):
+    lines = []
+    if keyword.name_pretty() != None and keyword.examples != None:
+      lines.append('%s:' % keyword.name_pretty())
+
+      example_strings = []
+      for e in keyword.examples:
+        example_strings.append('%s' % e)
+
+      lines.append('```%s```' % '\n'.join(example_strings))
+      lines.append('')
+
+    return '\n'.join(str(l) for l in lines)
 
   """
   The following are methods which should be executed when an Action is called
@@ -105,3 +142,10 @@ class ActionHandler(object):
 
   def _action_about_bot(self, **kwargs):
     return('%s is a chatbot created by %s. Please visit %r!' % (self.name, __author__, __website__))
+
+  def _action_help(self, **kwargs):
+    """ Returns a help message with examples of each command (where provided). """
+    msg = []
+    for k in self._keywords:
+      msg.append(ActionHandler.help_string(k))
+    return ''.join(msg)

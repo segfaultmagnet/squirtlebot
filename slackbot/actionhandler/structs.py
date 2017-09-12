@@ -50,20 +50,37 @@ class Keyword(object):
   more Actions. If the regex matches text, Actions containing the same keyword
   will have their specified 'function' called.
   """
-  def __init__(self, name, regex, re_match=False):
+  def __init__(self, name, regex, name_pretty=None, examples=None, re_match=False):
     """
     Args:
       name:     A string that will be used to identify this Keyword and match it
                 to Action(s) which should be called.
 
+      name_pretty:  A string that can be used as a user-friendly way to identify
+                    this Keyword when printed as part of a help message. This can
+                    be just a title or a short blurb describing the phrase that
+                    this Keyword will be matched against. If not provided, this
+                    Keyword should not be shown when printed as part of a help
+                    message.
+
       regex:    A compiled regular expression.
+
+      examples: A list of strings that can be printed as part of a help text.
+                These should be examples of the phrase being matched, and should
+                be useful and informative for the end user, not just developers.
+                If not provided, this Keyword should not be shown when printed as
+                part of a help message.
+                e.g. 'who is %s' % self.name
+                e.g. '%s show Albert's matchup' % self.at
 
       re_match: boolean; True if the regex should only be used to match from the
                 beginning (left) of a string, as in re.match();
                 False, any match at any place in that string, as in re.search().
     """
     self.name = name.lower()
+    self._name_pretty = name_pretty
     self.regex = regex
+    self.examples = examples
     self.re_match = re_match
 
   def __eq__(self, other):
@@ -76,3 +93,9 @@ class Keyword(object):
 
   def __str__(self):
     return self.name
+
+  def name_pretty(self):
+    if self._name_pretty:
+      return str.capitalize(self._name_pretty)
+
+    return None
