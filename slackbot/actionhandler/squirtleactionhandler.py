@@ -30,8 +30,11 @@ class SquirtleActionHandler(ActionHandler):
     super(SquirtleActionHandler, self).__init__(name=name, at=at)
     self._inflect = inflect.engine()
     self.update(actions=self.actions_fantasy(), keywords=self.keywords_fantasy())
+
     if cheeky:
       self.update(actions=self.actions_cheeky(), keywords=self.keywords_cheeky())
+
+    self.update(actions=self.actions_utility(), keywords=self.keywords_utility())
 
   def exec_action(self, function=None, **kwargs):
     results = super(SquirtleActionHandler, self).exec_action(**kwargs)
@@ -61,6 +64,11 @@ class SquirtleActionHandler(ActionHandler):
       Action(name='matchups_all', function=self._action_matchups_all),
       Action(name='tell', function=self._action_tell),
       # 'at_bot':  self._action_mention
+    ]
+
+  def actions_utility(self):
+    return [
+      Action(name='uptime', function=self._utility_uptime),
     ]
 
   def keywords_cheeky(self):
@@ -95,6 +103,15 @@ class SquirtleActionHandler(ActionHandler):
         re_match=True
       ),
       # 'at_bot':  [(re.compile(at, flags=re.I), True)]
+    ]
+
+  def keywords_utility(self):
+    return [
+      Keyword(
+        name='uptime',
+        regex=re.compile('%s uptime' % self.at),
+        re_match=True
+      ),
     ]
 
   """
@@ -295,3 +312,6 @@ class SquirtleActionHandler(ActionHandler):
     Returns the curren overall standings of the league.
     """
     return 'To be implemented.'
+
+  def _utility_uptime(self, **kwargs):
+    return 'Uptime: %s' % kwargs['uptime']

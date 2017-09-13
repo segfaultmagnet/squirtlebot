@@ -50,32 +50,31 @@ class SquirtleBot(SlackBot):
 
     super(SquirtleBot, self).run()
 
-  def handle_actions(self, execute, **kwargs):
+  def handle_actions(self, activities, **kwargs):
     """
     Overrides SlackBot.handle_actions()
 
     Passes additional information on to the SquirtleActionHandler that is needed
     for its Actions.
     """
-    results = []
-    for e in execute:
-      kwargs['action'] = e
-      kwargs['regex'] = execute[e]
+    for a in activities:
+      kwargs['action'] = a
+      kwargs['regex'] = activities[a]
 
-      if e == 'matchup':
+      if a == 'matchup':
         kwargs['teams'] = self.league.get().teams
         kwargs['players'] = self.league.get().players
         kwargs['week'] = self.league.current_week()
 
-      if e == 'matchups_all':
+      if a == 'matchups_all':
         kwargs['teams'] = self.league.get().teams
         kwargs['week'] = self.league.current_week()
 
-      if e == 'tell':
+      if a == 'tell':
         kwargs['teams'] = self.league.get().teams
         kwargs['teams_prev'] = self.league.get(self._config['League Year']-1).teams
 
-      self.actions.exec_action(self.post_msg, **kwargs)
+    super(SquirtleBot, self).handle_actions(activities, **kwargs)
 
   def set_actions(self):
     """

@@ -39,9 +39,6 @@ from .actionhandler import ActionHandler
 from .slackbotlib import SlackBotLib
 
 class SlackBot(threading.Thread):
-  global PING_TIMER_STEP
-  PING_TIMER_STEP = 5
-
   def __init__(self, name, config, debug=False):
     super(SlackBot, self).__init__()
     self._config = config
@@ -58,9 +55,9 @@ class SlackBot(threading.Thread):
 
     self._client = SlackClient(config['API Token'])
 
-    self._pingtimer = 0
     self._run       = True
     self._sleeptime = 1
+    self._starttime = None
     self._stopped   = False
 
     self.name(name)
@@ -86,6 +83,8 @@ class SlackBot(threading.Thread):
     this bot's ActionHandler.
     """
 
+    self._starttime = datetime.utcnow()
+
     # Connect.
     if self._client.rtm_connect():
       connect_msg = '%s (%s): is connected.' % (self.name(), type(self).__name__)
@@ -96,11 +95,7 @@ class SlackBot(threading.Thread):
 
       # Respond to stuff where appropriate.
       while self._run == True:
-        # Ping server.
-        t = time.time()
-        if t > self._pingtimer:
-          self._pingtimer = t + PING_TIMER_STEP
-          self._client.server.ping()
+        time.sleep(self._sleeptime)
 
         output = self.parse_rtm(self._client.rtm_read())
         for o in output:
@@ -116,8 +111,6 @@ class SlackBot(threading.Thread):
               }
               self.handle_actions(activities, **args)
 
-        time.sleep(self._sleeptime)
-
     self.info('Exiting.')
     self._stopped = True
     sys.exit()
@@ -127,9 +120,11 @@ class SlackBot(threading.Thread):
     Send the messages in activities to the ActionHandler instance for parsing
     and possible further actions.
     """
-    results = []
     for a in activities:
-      self.activities.exec_action(self.post_msg, **kwargs)
+      if a == 'uptime':
+        kwargs['uptime'] = self.uptime()
+
+      self.actions.exec_action(self.post_msg, **kwargs)
 
   def parse_rtm(self, output):
     """
@@ -238,6 +233,11 @@ class SlackBot(threading.Thread):
 
   def stop(self):
     self._run = False
+
+  def uptime(self):
+    t = datetime.utcnow()
+    delta = t - self._starttime
+    return str(delta - timedelta(microseconds=delta.microseconds))
 
   def _init_channels(self):
     """
